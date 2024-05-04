@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Home</title>
+
+    <script src="js/script.js"></script>
+
+</head>
+<body>
+
+    <div>
+        <strong>Chercher un utilisateur</strong><br>
+
+        <label for="searchFilter">Filtre :</label>
+        <select id="searchFilter">
+            <option value="name">name</option>
+            <option value="lastname">lastname</option>
+            <option value="mail">mail</option>
+        </select> <br>
+
+        <input type="text" id="searchField" required>
+        <button onclick="searchUser()">Chercher</button> <br>
+
+        <br> <strong><div id="resText"></div></strong>
+
+        <div id="searchResults"></div>
+    </div>
+</body>
+</html>
