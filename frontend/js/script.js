@@ -14,6 +14,45 @@ class User {
 
 // -----
 
+function getCookie (nom) {
+  nom = nom + "=";
+  var liste = document.cookie.split (';');
+  for (var i = 0; i < liste.length; i++) {
+      var c = liste[i];
+      while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nom) == 0) return c.substring(nom.length, c.length);
+  }
+  return null;
+}
+
+async function userInfo() {
+  if (document.cookie.includes('userId')) {
+    console.log('Le cookie userId est présent.');
+    const userId = getCookie("userId");
+    console.log(userId);
+
+    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    console.log(res);
+
+    if(res != undefined) {
+      res = (await res.json())[0];
+      console.log(res);
+
+      document.getElementById("resUser").textContent = "Bienvenue "+res.name + " !";
+      document.getElementById("resUser").style.color = "green";
+      document.getElementById("resUser").style.fontWeight = "bold";
+
+      document.getElementById("userName").textContent = "Prenom : "+res.name;
+      document.getElementById("userLastname").textContent = "Nom : "+res.lastname;
+      document.getElementById("userMail").textContent = "Mail : "+res.mail;
+
+    }
+  } else {
+    console.log('Le cookie userId n\'est pas présent.');
+    document.getElementById("resUser").textContent = "Vous n'etes pas connecté";
+  }
+}
+
 async function hashPassword(password) {
   // Convertir le mot de passe en tableau de bytes
   const passwordBuffer = new TextEncoder().encode(password);
@@ -91,6 +130,14 @@ async function getServer(url) {
   }
 }
 
+function createCookie(name, field, time) { // time in minute
+  var e = null;
+  var date = new Date ();
+  date.setTime (date.getTime() + (time * 60 * 1000));
+  e = "; expires=" + date.toGMTString();
+  document.cookie = name + "=" + field + e + "; path=/";
+}
+
 async function signupSubmit() {
     const name = document.getElementById("name").value;
     const lastname = document.getElementById("lastname").value;
@@ -124,18 +171,16 @@ async function signupSubmit() {
             return response.json();
         })
         .then(data => {
-          const name = data.name;
-          const lasname = data.lastname;
-          const mail = data.mail;
-          const password = data.password;
+          console.log(data.message);
 
-          document.getElementById("toggleInfo").style.display = "block";
-          document.getElementById("resName").textContent = name;
-          document.getElementById("resLastname").textContent = lastname;
-          document.getElementById("resMail").textContent = mail;
-          document.getElementById("resPassword").textContent = password;
+          document.getElementById("resText").style.color = "green";
+          document.getElementById("resText").style.fontWeight = "bold";
           document.getElementById("resText").textContent = "Inscription réussie";
+          window.location.href = "index.html";
+          createCookie("userId", data.userId, 30);
+          
         }) 
+
         .catch(error => {
             console.error('There has been a problem with your fetch operation:', error);
         });

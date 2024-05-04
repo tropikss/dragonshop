@@ -1,8 +1,18 @@
+
 const express = require('express');
-const bcrypt = require('bcrypt');
 const app = express();
+
+const bcrypt = require('bcrypt');
+
 const cors = require('cors');
 const bodyparser = require('body-parser');
+
+const { v4: uuidv4 } = require('uuid');
+const cookieParser = require('cookie-parser');
+app.use(cookieParser('maThIs273'));
+
+
+
 const port = 3000;
 
 const url = 'mongodb+srv://mathisfriess:L4HEfJzdFX7tcgKI@dragonshop.9wodojn.mongodb.net/?retryWrites=true&w=majority&appName=DragonShop';
@@ -15,6 +25,11 @@ const usersCollection = db.collection('users');
 
 app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
 app.use(bodyparser.json());
+
+
+async function newUserId() {
+  return uuidv4().toString();
+}
 
 async function hashPassword(password) {
   return new Promise((resolve, reject) => {
@@ -55,26 +70,36 @@ app.get("/users/search/:filter/:field", async (req, res) => {
 
   if(resTab[0] != undefined) {
     res.send(resTab);
+    console.log(resTab);
   } else {
     res.status(204).end();
   }
 });
 
-app.post('/signup', async (req, response) => {
+app.post('/signup', async (req, res) => {
   console.log(req.body);
 
   const hashedPassword = await hashPassword(req.body.password);
+  const userId = await newUserId();
+  console.log(userId);
 
   const newuser = {
     "name" : req.body.name,
     "lastname" : req.body.lastname,
     "mail": req.body.mail,
-    "password": hashedPassword
+    "password": hashedPassword,
+    "userId": userId
   }
 
   insertdb(usersCollection, newuser);
 
-  response.send(newuser);
+  res.cookie('userId', userId, { 
+      httpOnly: false, // Empêche JavaScript côté client d'accéder au cookie
+      secure: false,   // Ne transmet le cookie que sur HTTPS
+      sameSite: 'strict' // Protège contre les attaques de type CSRF
+  });
+
+  res.status(200).json({ message: 'Inscription réussie', userId: userId});
 });
 
 app.listen(port, () => {

@@ -9,7 +9,22 @@
     <script src="js/script.js"></script>
 
 </head>
-<body>
+<body onload="userInfo()">
+    <div>
+        <div id="resUser"></div><br>
+
+        <span id="userName"></span> <br>
+
+        <span id="userLastname"></span> <br>
+
+        <span id="userMail"></span> <br><br>
+    </div>
+    <nav>
+        <div>
+            <button onclick="window.location.href='login.html'">Connexion</button>
+            <button onclick="window.location.href='signup.html'">Inscription</button>
+        </div>
+    </nav>
 
     <div>
         <strong>Chercher un utilisateur</strong><br>
