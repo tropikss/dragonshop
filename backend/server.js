@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const cookieParser = require('cookie-parser');
 app.use(cookieParser('maThIs273'));
 
-
+const nodemailer = require('nodemailer');
 
 const port = 3000;
 
@@ -55,8 +55,8 @@ app.get("/users/search/:filter/:field", async (req, res) => {
   console.log(field);
 
   const request = {
-                    find:"users",
-                    filter:{[filter]:field}
+    find:"users",
+    filter:{[filter]:field}
   };
   const rep = await asyncSearch(request);
 
@@ -79,6 +79,20 @@ app.get("/users/search/:filter/:field", async (req, res) => {
 app.post('/signup', async (req, res) => {
   console.log(req.body);
 
+  const request = {
+    find:"users",
+    filter:{mail:req.body.mail}
+  };
+
+  var rep = await asyncSearch(request);
+  rep = rep.cursor.firstBatch[0];
+  console.log(rep);
+
+  if(rep != undefined) {
+    res.status(400).end();
+    return;
+  }
+
   const hashedPassword = await hashPassword(req.body.password);
   const userId = await newUserId();
   console.log(userId);
@@ -93,14 +107,67 @@ app.post('/signup', async (req, res) => {
 
   insertdb(usersCollection, newuser);
 
-  res.cookie('userId', userId, { 
-      httpOnly: false, // Empêche JavaScript côté client d'accéder au cookie
-      secure: false,   // Ne transmet le cookie que sur HTTPS
-      sameSite: 'strict' // Protège contre les attaques de type CSRF
-  });
-
   res.status(200).json({ message: 'Inscription réussie', userId: userId});
 });
+
+
+app.post('/login', async (req, res) => {
+  console.log(req.body);
+
+  const passwordAttempt = await req.body.password;
+  const mail = await req.body.mail;
+  
+  const request = {
+    find:"users",
+    filter:{mail:mail}
+  };
+
+  var rep = await asyncSearch(request);
+  console.log(rep.cursor.firstBatch);
+  rep = rep.cursor.firstBatch[0];
+  if(rep == undefined) {
+    console.log("Aucun mail ne correspond");
+    res.status(205).end();
+    return;
+  }
+  console.log(rep)
+  const passwordBdd = rep.password;
+
+  console.log("attempt: "+passwordAttempt);
+  console.log("bdd: "+passwordBdd);
+
+  bcrypt.compare(passwordAttempt, passwordBdd)
+    .then(async match => {
+        if (match) {
+          const userId = await newUserId();
+          udpateDb(usersCollection, "mail", mail, "userId", userId);
+          console.log('Mot de passe correct. Connexion réussie.');
+          res.status(200).json({message:"Connexion reussie", userId:userId});
+        } else {
+          console.log('Mot de passe incorrect. Connexion échouée.');
+          res.status(204).end();
+        }
+    })
+    .catch(err => console.error('Erreur lors de la comparaison des mots de passe :', err));
+
+
+  //res.status(200).json({ message: 'Inscription réussie', userId: userId});
+});
+
+async function udpateDb(table, filter, filterValue, field, fieldValue) {
+  table.updateOne(
+    { [filter]: filterValue }, // Filtre pour trouver l'utilisateur spécifique
+    { $set: { [field]: fieldValue } } // Mise à jour du champ "status"
+  )
+  .then(result => {
+      console.log(`Mise à jour réussie pour l'utilisateur avec ${filterValue}`);
+      return true;
+  })
+  .catch(error => {
+      console.error("Erreur lors de la mise à jour :", error);
+      return false;
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

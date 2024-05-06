@@ -1,5 +1,6 @@
 
 //const bcryptjsjs = require('bcryptjsjsjs');
+// Dragonshop38
 
 // TYPES : 
 
@@ -38,19 +39,95 @@ async function userInfo() {
       res = (await res.json())[0];
       console.log(res);
 
-      document.getElementById("resUser").textContent = "Bienvenue "+res.name + " !";
-      document.getElementById("resUser").style.color = "green";
-      document.getElementById("resUser").style.fontWeight = "bold";
+      const resText = document.createElement("p");
+      resText.textContent = "Bienvenue "+res.name+" !";
 
-      document.getElementById("userName").textContent = "Prenom : "+res.name;
-      document.getElementById("userLastname").textContent = "Nom : "+res.lastname;
-      document.getElementById("userMail").textContent = "Mail : "+res.mail;
+      const resName = document.createElement("div");
+      resName.textContent = "Prenom : "+res.name;
 
+      const resLastname = document.createElement("div");
+      resLastname.textContent = "Nom : "+res.lastname;
+
+      const resMail = document.createElement("div");
+      resMail.textContent = "Mail : "+res.mail;
+
+      document.getElementById("userInfo").appendChild(resText);
+      document.getElementById("userInfo").appendChild(resName);
+      document.getElementById("userInfo").appendChild(resLastname);
+      document.getElementById("userInfo").appendChild(resMail);
+      
+      const button = document.createElement("button");
+      button.setAttribute("onclick", "logout()");
+      button.textContent = "Déconnexion";
+      document.getElementById("logButton").appendChild(button);    
     }
   } else {
     console.log('Le cookie userId n\'est pas présent.');
-    document.getElementById("resUser").textContent = "Vous n'etes pas connecté";
+    const temp = document.createElement("p");
+    temp.textContent = "Vous n'etes pas connecté";
+    document.getElementById("userInfo").appendChild(temp);
+
+    const loginButton = document.createElement("button");
+    loginButton.setAttribute("onclick", "window.location.href='login.html'");
+    loginButton.textContent = "Connexion";
+    document.getElementById("logButton").appendChild(loginButton); 
+
+    const signupButton = document.createElement("button");
+    signupButton.setAttribute("onclick", "window.location.href='signup.html'");
+    signupButton.textContent = "Inscription";
+    document.getElementById("logButton").appendChild(signupButton);
   }
+}
+
+function logout() {
+  document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  location.reload();
+}
+
+async function loginSubmit() {
+  const mail = document.getElementById("mailField").value.toLowerCase();
+  const password = document.getElementById("passwordField").value;
+  console.log(mail);
+  const hashedPassword = await hashPassword(password);
+
+  const loginData = {mail:mail, password:hashedPassword};
+
+  const requestOptions = {
+    method: 'POST', // Méthode de la requête
+    headers: {
+      'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
+    },
+    body:JSON.stringify(loginData) // Corps de la requête, converti en JSON
+  };
+    
+  fetch('http://localhost:3000/login', requestOptions)
+      .then(response => {
+        if(response.status == 205) {
+          console.log("Email introuvable");
+          document.getElementById("resText").style.color = "red";
+          document.getElementById("resText").style.fontWeight = "bold";
+          document.getElementById("resText").textContent = "Email incorrect";
+        } else if(response.status == 204) {
+          document.getElementById("resText").style.color = "red";
+          document.getElementById("resText").style.fontWeight = "bold";
+          document.getElementById("resText").textContent = "Mot de passe incorrect";
+        } else if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log(data.message);
+
+        document.getElementById("resText").style.color = "green";
+        document.getElementById("resText").style.fontWeight = "bold";
+        document.getElementById("resText").textContent = "Connexion réussie";
+        window.location.href = "index.html";
+        createCookie("userId", data.userId, 30);
+      }) 
+      .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+      });
 }
 
 async function hashPassword(password) {
@@ -139,11 +216,23 @@ function createCookie(name, field, time) { // time in minute
 }
 
 async function signupSubmit() {
-    const name = document.getElementById("name").value;
-    const lastname = document.getElementById("lastname").value;
-    const mail = document.getElementById("mail").value;
+    const name = document.getElementById("name").value.toLowerCase();
+    const lastname = document.getElementById("lastname").value.toLowerCase();
+    const mail = document.getElementById("mail").value.toLowerCase();
     const password = document.getElementById("password").value;
     const passwordConfirmation = document.getElementById("passwordConfirmation").value;
+
+    let emailPattern = /^[a-zA-Z0-9._%+-]+@etu.umontpellier\.fr$/;
+
+  if (emailPattern.test(mail)) {
+    console.log("L'adresse e-mail est valide.");
+  } else {
+    console.log("L'adresse e-mail n'est pas valide.");
+    document.getElementById("resText").style.color = "red";
+    document.getElementById("resText").style.fontWeight = "bold";
+    document.getElementById("resText").textContent = "Mail incorrect, utilisez un mail univ Montpellier";
+    return;
+  }
 
     if(password != passwordConfirmation) {
       document.getElementById("resText").style.color = "red";
@@ -152,36 +241,42 @@ async function signupSubmit() {
       return;
     }
 
-    const hashedPassword = await hashPassword(password);
-    const user = new User(name, lastname, mail, hashedPassword);
-      
-    const requestOptions = {
-      method: 'POST', // Méthode de la requête
-      headers: {
-        'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
-      },
-      body: JSON.stringify(user) // Corps de la requête, converti en JSON
-    };
-      
-    fetch('http://localhost:3000/signup', requestOptions)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-          console.log(data.message);
+const hashedPassword = await hashPassword(password);
+const user = new User(name, lastname, mail, hashedPassword);
+  
+const requestOptions = {
+  method: 'POST', // Méthode de la requête
+  headers: {
+    'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
+  },
+  body: JSON.stringify(user) // Corps de la requête, converti en JSON
+};
+  
+fetch('http://localhost:3000/signup', requestOptions)
+    .then(response => {
+      if(response.status == 400) {
+        document.getElementById("resText").style.color = "red";
+        document.getElementById("resText").style.fontWeight = "bold";
+        document.getElementById("resText").textContent = "Cet email est deja utilisé";
+        console.log("Cet email est deja utilisé");
+        return undefined;
+  
+      } else if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+      console.log(data.message);
 
-          document.getElementById("resText").style.color = "green";
-          document.getElementById("resText").style.fontWeight = "bold";
-          document.getElementById("resText").textContent = "Inscription réussie";
-          window.location.href = "index.html";
-          createCookie("userId", data.userId, 30);
-          
-        }) 
-
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
-        });
+      document.getElementById("resText").style.color = "green";
+      document.getElementById("resText").style.fontWeight = "bold";
+      document.getElementById("resText").textContent = "Inscription réussie";
+      window.location.href = "index.html";
+      createCookie("userId", data.userId, 30);
+      
+    }) 
+    .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+    });
 }
