@@ -11,7 +11,7 @@ class User {
       this.mail = mail;
       this.password = password;
   }
-}
+} 
 
 // -----
 
@@ -38,9 +38,74 @@ async function userInfo() {
     if(res != undefined) {
       res = (await res.json())[0];
       console.log(res);
+      
+      var button = document.createElement("button");
+      button.setAttribute("onclick", "logout()");
+      button.textContent = "Déconnexion";
+      document.getElementById("logButton").appendChild(button);
 
-      const resText = document.createElement("p");
-      resText.textContent = "Bienvenue "+res.name+" !";
+      button = document.createElement("button");
+      button.setAttribute("onclick", "window.location.href='account.html'");
+      button.textContent = "Mon compte";
+      document.getElementById("logButton").appendChild(button);
+      
+      if(res.role =="admin") {
+        const button = document.createElement("button");
+        button.setAttribute("onclick", "window.location.href='admin.html'");
+        button.textContent = "Page admin";
+        document.getElementById("logButton").appendChild(button);
+      }
+    }
+  } else {
+    console.log('Le cookie userId n\'est pas présent.');
+
+    const loginButton = document.createElement("button");
+    loginButton.setAttribute("onclick", "window.location.href='login.html'");
+    loginButton.textContent = "Connexion";
+    document.getElementById("logButton").appendChild(loginButton); 
+
+    const signupButton = document.createElement("button");
+    signupButton.setAttribute("onclick", "window.location.href='signup.html'");
+    signupButton.textContent = "Inscription";
+    document.getElementById("logButton").appendChild(signupButton);
+  }
+}
+
+async function getAdmin() {
+ const userId = getCookie("userId");
+ console.log(userId);
+ if(userId != null ) {
+  var res = await getServer("http://localhost:3000/admin/"+userId);
+  console.log(await res);
+  res = await res.json();
+  console.log(res);
+  if(res.status == 200) {
+    document.getElementById("search").innerHTML = res.html;
+    return;
+  } else {
+    document.getElementById("search").innerHTML = res.html;
+    return;
+  }
+ } else {
+  document.getElementById("search").innerHTML = "<strong>Vous n'etes pas connecté</strong>";
+}
+}
+
+async function loadAccount() {
+  if (document.cookie.includes('userId')) {
+    console.log('Le cookie userId est présent.');
+    const userId = getCookie("userId");
+    console.log(userId);
+
+    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    console.log(res);
+
+    if(res != undefined) {
+      res = (await res.json())[0];
+      console.log(res);
+
+      const resText = document.createElement("strong");
+      resText.textContent = "Vos informations : ";
 
       const resName = document.createElement("div");
       resName.textContent = "Prenom : "+res.name;
@@ -55,27 +120,13 @@ async function userInfo() {
       document.getElementById("userInfo").appendChild(resName);
       document.getElementById("userInfo").appendChild(resLastname);
       document.getElementById("userInfo").appendChild(resMail);
-      
-      const button = document.createElement("button");
-      button.setAttribute("onclick", "logout()");
-      button.textContent = "Déconnexion";
-      document.getElementById("logButton").appendChild(button);    
+
+    } else {
+      const text = document.createElement("strong");
+      text.textContent = "Vous n'etes pas connecté";
+
+      document.getElementById("userInfo").appendChild(text);
     }
-  } else {
-    console.log('Le cookie userId n\'est pas présent.');
-    const temp = document.createElement("p");
-    temp.textContent = "Vous n'etes pas connecté";
-    document.getElementById("userInfo").appendChild(temp);
-
-    const loginButton = document.createElement("button");
-    loginButton.setAttribute("onclick", "window.location.href='login.html'");
-    loginButton.textContent = "Connexion";
-    document.getElementById("logButton").appendChild(loginButton); 
-
-    const signupButton = document.createElement("button");
-    signupButton.setAttribute("onclick", "window.location.href='signup.html'");
-    signupButton.textContent = "Inscription";
-    document.getElementById("logButton").appendChild(signupButton);
   }
 }
 
@@ -144,6 +195,47 @@ async function hashPassword(password) {
   return hashHex;
 }
 
+async function userInfoChange(i) {
+
+  const userId = await getCookie("userId");
+  console.log(userId);
+
+  const names = document.querySelectorAll('[data-type="name"]');
+  const lastnames = document.querySelectorAll('[data-type="lastname"]');
+  const mails = document.querySelectorAll('[data-type="mail"]');
+
+  var name;
+  var lastname;
+  var mail;
+  
+  names.forEach(el => {
+    if(el.getAttribute("i") == i.toString()) {
+      name = el.value;
+    }
+  })
+  lastnames.forEach(el => {
+    if(el.getAttribute("i") == i.toString()) {
+      lastname = el.value;
+    }
+  })
+  mails.forEach(el => {
+    if(el.getAttribute("i") == i.toString()) {
+      mail = el.textContent;
+    }
+  })
+  console.log(name);
+  console.log(lastname);
+  console.log(mail);
+
+  const res = await getServer("http://localhost:3000/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
+  if(await res.status == 200) {
+    console.log("modification effectué avec succès");
+    alert("Modification réussie");
+  } else {
+    console.log("erreur lors de la modification");
+  }
+}
+
 async function searchUser() {
   const field = document.getElementById("searchField").value;
   const filter = document.getElementById("searchFilter").value;
@@ -161,22 +253,57 @@ async function searchUser() {
     const searchResults = document.getElementById("searchResults");
     searchResults.innerHTML = "";
 
+    var i = 0;
+
     res.forEach(el => {
+      i++;
       const box = document.createElement("div");
       box.style.border = "1px solid black";
 
-      const name = document.createElement("div");
-      name.textContent = "Prenom : "+el.name;
+        const labelName = document.createElement("div");
+        labelName.textContent = "Prenom : ";
 
-      const lastname = document.createElement("div");
-      lastname.textContent = "Nom : "+el.lastname;
+        const labelLastname = document.createElement("div");
+        labelLastname.textContent = "Nom : ";
 
-      const mail = document.createElement("div");
-      mail.textContent = "Mail : "+el.mail;
+        const labelMail = document.createElement("div");
+        labelMail.textContent = "Mail : ";
 
-      box.appendChild(name);
-      box.appendChild(lastname);
-      box.appendChild(mail);
+          const name = document.createElement("input");
+          name.setAttribute("i", i.toString());
+          name.setAttribute("data-type", "name");
+          name.value = el.name;
+
+        labelName.appendChild(name);
+
+          const lastname = document.createElement("input");
+          lastname.setAttribute("i", i.toString());
+          lastname.setAttribute("data-type", "lastname");
+          lastname.value = el.lastname;
+
+        labelLastname.appendChild(lastname);
+
+          const mail = document.createElement("span");
+          mail.setAttribute("i", i.toString());
+          mail.setAttribute("data-type", "mail");
+          mail.textContent = el.mail;
+
+        labelMail.appendChild(mail);
+
+        const buttonLabel = document.createElement("span");
+        buttonLabel.setAttribute("id","buttonLabel");
+
+        const button = document.createElement("button");
+        button.textContent = "Modifier";
+        button.onclick = function() {
+          userInfoChange(i);
+        };
+      box.appendChild(labelMail);
+      box.appendChild(labelName);
+      box.appendChild(labelLastname);
+      box.appendChild(button);
+      box.appendChild(buttonLabel);
+
       searchResults.appendChild(box);
       searchResults.appendChild(document.createElement("br"));
     });

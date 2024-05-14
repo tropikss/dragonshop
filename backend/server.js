@@ -4,6 +4,8 @@ const app = express();
 
 const bcrypt = require('bcrypt');
 
+const path = require('path');
+
 const cors = require('cors');
 const bodyparser = require('body-parser');
 
@@ -26,6 +28,7 @@ const usersCollection = db.collection('users');
 app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
 app.use(bodyparser.json());
 
+connectToMongo();
 
 async function newUserId() {
   return uuidv4().toString();
@@ -102,7 +105,8 @@ app.post('/signup', async (req, res) => {
     "lastname" : req.body.lastname,
     "mail": req.body.mail,
     "password": hashedPassword,
-    "userId": userId
+    "userId": userId,
+    "role": "client" // client, admin
   }
 
   insertdb(usersCollection, newuser);
@@ -110,6 +114,69 @@ app.post('/signup', async (req, res) => {
   res.status(200).json({ message: 'Inscription réussie', userId: userId});
 });
 
+async function checkPermissions(userId) {
+  const request = {
+    find:"users",
+    filter:{userId:userId}
+  };
+
+  var rep = await asyncSearch(request);
+  rep = rep.cursor.firstBatch[0]
+
+  if(rep != undefined) {
+    const role = rep.role;
+    return (role == "admin");
+  } else {
+    return false;
+  }
+}
+
+app.get("/admin-add/:name", (req, res) => {
+  const name = req.params.name;
+  udpateDb(usersCollection, "name", name, "role", "admin");
+  console.log(name+" est maintenant admin");
+  res.status(200).send(name+" est maintenant admin");
+});
+
+app.get("/changeUserInfo/:userId/:name/:lastname/:mail", async (req, res) => {
+  const userId = req.params.userId;
+  const name = req.params.name;
+  const lastname = req.params.lastname;
+  const mail = req.params.mail;
+
+  if(await checkPermissions(userId)) {
+    udpateDb(usersCollection, "mail", mail, "name", name);
+    udpateDb(usersCollection, "mail", mail, "lastname", lastname);
+    res.status(200).send("ok");
+  } else {
+    console.log("pas les perms");
+    res.status(400).end("erreur");
+  }
+});
+
+app.get("/admin/:userId", async (req, res) => {
+  console.log("admin: "+req.params.userId);
+  if(await checkPermissions(req.params.userId)) {
+    const html = `
+    <strong>Chercher un utilisateur</strong><br>
+    <label for="searchFilter">Filtre :</label>
+    <select id="searchFilter">
+        <option value="name">name</option>
+        <option value="lastname">lastname</option>
+        <option value="mail">mail</option>
+    </select> <br>
+    <input type="text" id="searchField" required>
+    <button onclick="searchUser()">Chercher</button> <br>
+    <br>
+    <strong><div id="resText"></div></strong>
+    <div id="searchResults"></div>`;
+    res.status(200).json({html:html});
+  } else {
+    const html = `
+    <strong>Vous n'avez pas les autorisation necessaires</strong>`;
+    res.status(201).json({html:html});
+  }
+});
 
 app.post('/login', async (req, res) => {
   console.log(req.body);
@@ -154,10 +221,19 @@ app.post('/login', async (req, res) => {
   //res.status(200).json({ message: 'Inscription réussie', userId: userId});
 });
 
+/*
+  updateDb(table, filtre, valeurViltre, champs, valeur champs) :
+  
+  Permet de mettre a jour un element dans une table.
+  On renseigne la table dans table, puis un filtre et sa valeur pour trouver l'element en question. Enfin
+    le champs a update et sa nouvelle valeur
+
+  Renvoie true si la mise a jour a réussi et false si elle a échouée
+*/
 async function udpateDb(table, filter, filterValue, field, fieldValue) {
   table.updateOne(
     { [filter]: filterValue }, // Filtre pour trouver l'utilisateur spécifique
-    { $set: { [field]: fieldValue } } // Mise à jour du champ "status"
+    { $set: { [field]: fieldValue } }
   )
   .then(result => {
       console.log(`Mise à jour réussie pour l'utilisateur avec ${filterValue}`);
@@ -181,8 +257,6 @@ async function connectToMongo() {
     console.error('Erreur de connexion à MongoDB :', err);
   }
 }
-
-connectToMongo();
 
 function insertdb(collection, doc) {
 
