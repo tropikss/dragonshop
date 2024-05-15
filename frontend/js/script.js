@@ -4,6 +4,7 @@
 
 // TYPES : 
 
+// Définie les caracteristiques d'un utilsateur
 class User {
   constructor(name, lastname, mail, password) {
       this.name = name;
@@ -13,8 +14,9 @@ class User {
   }
 } 
 
-// -----
-
+// Permet de récupérer la valeur du cookie avec le nom indiqué
+// getCookie(String) -> String
+// getCookie("UserId") -> aA5bC-4g6...
 function getCookie (nom) {
   nom = nom + "=";
   var liste = document.cookie.split (';');
@@ -26,18 +28,18 @@ function getCookie (nom) {
   return null;
 }
 
+// Permet de définir les boutons de connexion, deconnexion etc...en fonction de l'utilisateur
 async function userInfo() {
-  if (document.cookie.includes('userId')) {
-    console.log('Le cookie userId est présent.');
+  if (document.cookie.includes('userId')) { // Cherche le cookie userId (si l'utilisateur est bien connecté)
+
     const userId = getCookie("userId");
-    console.log(userId);
+    console.log("userId : "+userId);
 
+    // récupère les données de l'utilisateur en cours
     var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
-    console.log(res);
 
-    if(res != undefined) {
+    if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
-      console.log(res);
       
       var button = document.createElement("button");
       button.setAttribute("onclick", "logout()");
@@ -47,6 +49,11 @@ async function userInfo() {
       button = document.createElement("button");
       button.setAttribute("onclick", "window.location.href='account.html'");
       button.textContent = "Mon compte";
+      document.getElementById("logButton").appendChild(button);
+
+      button = document.createElement("button");
+      button.setAttribute("onclick", "window.location.href='chat.html'");
+      button.textContent = "Messagerie";
       document.getElementById("logButton").appendChild(button);
       
       if(res.role =="admin") {
@@ -236,7 +243,7 @@ async function userInfoChange(i) {
   }
 }
 
-async function searchUser() {
+async function searchUserAdmin() {
   const field = document.getElementById("searchField").value;
   const filter = document.getElementById("searchFilter").value;
 
@@ -316,6 +323,195 @@ async function searchUser() {
     searchResults.innerHTML = "";
   }
 }
+
+async function getCurrentMail() {
+  const userId = await getCookie("userId");
+
+  if(await userId != undefined) {
+    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    if(await res != undefined) {
+      res = await res.json();
+      res = res[0];
+      console.log(res);
+      return res.mail;
+    } else {
+      console.log("probleme avec l'userId");
+    }
+  } else {
+    return undefined;
+  }
+}
+
+var socket;
+var mail1;
+
+async function connectToWebsocket() {
+
+  const mailUser = await getCurrentMail();
+  console.log(mailUser);
+
+  socket = new WebSocket('ws://localhost:8080/'+mailUser);
+
+  socket.addEventListener('open', function (event) {
+    console.log('Connecté au serveur WebSocket');
+  });
+
+  socket.addEventListener('message', function (event) {
+      var data = event.data;
+      console.log("data : "+data);
+      data = JSON.parse(data);
+      switch (data.type) {
+        case "message":
+          console.log(data.content);
+          addMessage(data.mail, data.message)
+          break;
+        case "chat-accept":
+          console.log("chat-accept");
+          newChat(mailUser, data.mail);
+          break;
+      }
+  });
+  // fonction qui créer une fenetre de dialogue sur le front
+  // ajoute le mail a la liste des conversations
+
+  // Gestionnaire d'événement pour les erreurs
+  socket.addEventListener('error', function (event) {
+      console.error('WebSocket error:', event);
+  });
+
+  // Gestionnaire d'événement pour la fermeture de la connexion
+  socket.addEventListener('close', function (event) {
+      console.log('Déconnecté du serveur WebSocket');
+  });
+}
+
+async function addMessage(mail, message) {
+  var chat = document.getElementById(mail+"-chatContent");
+
+  const msg = document.createElement("div");
+  msg.style.width = "1el";
+  msg.style.height = "25px";
+
+  const currentMail = await getCurrentMail();
+  console.log(await currentMail);
+  console.log(mail);
+
+  if(selfMail == await currentMail) {
+    msg.style.textAlign = "right";
+  } else {
+    msg.style.textAlign = "left";
+  }
+  msg.textContent = message;
+  msg.style.border = "1px solid black";
+
+  chat.appendChild(msg);
+}
+
+function newChat(selfMail, otherMail) {
+  const chat = document.getElementById("chat");
+
+  const box = document.createElement("div");
+  const mailbox = document.createElement("span");
+
+  mailbox.style.fontWeight = "bold";
+  mailbox.textContent = otherMail;
+  box.appendChild(mailbox);
+
+  box.setAttribute("id", "div-"+otherMail);
+  box.style.border = "2px solid black";
+  box.style.width = "50%";
+  box.style.height = "200px";
+
+  const chatField = document.createElement("input");
+  chatField.setAttribute("id", "chatField");
+  chatField.type = "text";
+
+  const chatContent = document.createElement("div");
+  box.appendChild(chatContent);
+  chatContent.setAttribute("id", otherMail+"-chatContent");
+
+  const button = document.createElement("button");
+  button.textContent = "Envoyer";
+  button.onclick = function() {
+    const message = document.getElementById("chatField").value;
+
+    var data = {
+      "type":"message",
+      "senderMail":selfMail,
+      "receiverMail":otherMail,
+      "message":message
+    }
+    data = JSON.stringify(data);
+    socket.send(data);
+
+    addMessage(selfMail, message);
+  }
+  box.appendChild(chatField);
+  box.appendChild(button);
+
+  chat.appendChild(box);
+}
+
+function askChat(mail1, mail2) {
+  const data = {
+    "type":"ask-chat",
+    "askerMail" : mail1,
+    "askedMail" : mail2
+  }
+
+  console.log(data);
+  const jsonData = JSON.stringify(data);
+  console.log(jsonData);
+  socket.send(jsonData);
+}
+
+async function displayUser() {
+
+  const mail1 = await getCurrentMail();
+  console.log("current mail : "+mail1);
+  const mail2 = document.getElementById("searchText").value+"@etu.umontpellier.fr";
+
+  res = await getServer("http://localhost:3000/users/search/mail/"+mail2);
+
+  if(res != undefined) {
+    res = await res.json();
+    res = res[0];
+
+    document.getElementById("searchRes").textContent = "Resultat :";
+    document.getElementById("searchRes").style.color = "black";
+    document.getElementById("searchRes").style.fontWeight = "bold";
+
+    const box = document.createElement("div");
+    box.style.border = "1px solid black";
+
+    const mail = document.createElement("div");
+    const name = document.createElement("div");
+    const lastname = document.createElement("div");
+
+    mail.textContent = "Mail : "+res.mail;
+    name.textContent = "Prenom : "+res.name;
+    lastname.textContent = "Nom de famille : "+res.lastname;
+
+    const button = document.createElement("button");
+    button.textContent = "Contacter";
+    button.addEventListener("click", async function() {
+      askChat(mail1, mail2);
+    });
+
+    box.appendChild(mail);
+    box.appendChild(name);
+    box.appendChild(lastname);
+    box.appendChild(button);
+
+    document.getElementById("foundUser").appendChild(box);
+  
+  } else {
+    document.getElementById("searchRes").style.color = "red";
+    document.getElementById("searchRes").style.fontWeight = "bold";
+    document.getElementById("searchRes").textContent = "Aucun resultat";
+  }
+}
+
 
 async function getServer(url) {
   try {

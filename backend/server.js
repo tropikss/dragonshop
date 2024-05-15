@@ -1,4 +1,9 @@
 
+/*
+docker run --name mongodb -d -p 27017:27017 mongodb/mongodb-community-server
+docker ps -a
+*/
+
 const express = require('express');
 const app = express();
 
@@ -17,18 +22,28 @@ const nodemailer = require('nodemailer');
 
 const port = 3000;
 
+/*
 const url = 'mongodb+srv://mathisfriess:L4HEfJzdFX7tcgKI@dragonshop.9wodojn.mongodb.net/?retryWrites=true&w=majority&appName=DragonShop';
 const { MongoClient } = require('mongodb');
 const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = client.db("dragonshop");
 const usersCollection = db.collection('users');
-
+*/
 // L4HEfJzdFX7tcgKI
+
+const MongoClient = require('mongodb').MongoClient;
+
+const uri = 'mongodb://localhost:27017';
+
+const client = new MongoClient(uri);
+const DB_NAME = 'my_DB'
+const db = client.db(DB_NAME);
+const usersCollection = db.collection('users');
+
+
 
 app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
 app.use(bodyparser.json());
-
-connectToMongo();
 
 async function newUserId() {
   return uuidv4().toString();
@@ -166,7 +181,7 @@ app.get("/admin/:userId", async (req, res) => {
         <option value="mail">mail</option>
     </select> <br>
     <input type="text" id="searchField" required>
-    <button onclick="searchUser()">Chercher</button> <br>
+    <button onclick="searchUserAdmin()">Chercher</button> <br>
     <br>
     <strong><div id="resText"></div></strong>
     <div id="searchResults"></div>`;
@@ -249,6 +264,7 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 // Connecte-toi à MongoDB
+/*
 async function connectToMongo() {
   try {
     await client.connect();
@@ -257,6 +273,7 @@ async function connectToMongo() {
     console.error('Erreur de connexion à MongoDB :', err);
   }
 }
+*/
 
 function insertdb(collection, doc) {
 
