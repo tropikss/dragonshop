@@ -62,13 +62,36 @@ wss.on('connection', (ws, req) => {
 
                 askerws.send(askerData);
                 askedws.send(askedData)
+            }
+            } else if(data.type == "ask-status") {
+                const askedMail = data.askedMail;
+                if(connections.get(askedMail)) {
+                    console.log("utilisateur connecté");
+                    var data = {
+                        "type":"status",
+                        "mail":askedMail,
+                        "content":"true"
+                    }
+                    data = JSON.stringify(data);
+                    ws.send(data);
+                } else {
+                    console.log("utilisateur non connecté");
+                    var data = {
+                        "type":"status",
+                        "mail":askedMail,
+                        "content":"false"
+                    }
+                    data = JSON.stringify(data);
+                    ws.send(data);
+                }
+
             } else {
                 console.log("Manque un des deux correspondants");
             }
-        }
     });
     
     ws.on('close', () => {
-        console.log('Connexion WebSocket fermée.');
+        connections.delete(mail1);
+        console.log('<- '+mail1);
     });
 });

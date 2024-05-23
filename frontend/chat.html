@@ -5,17 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messagerie</title>
     <script src="js/script.js"></script>
+    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
+<style>
+    html, body, pre, code, kbd, samp {
+        font-family: "Press Start 2P";
+    }
+
+    .message-list {
+        max-height: 290px; /* Définissez la hauteur maximale souhaitée */
+        overflow-y: auto;  /* Permet le défilement vertical si nécessaire */
+    }
+
+    .message.-left {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-end;
+        }
+    .message.-right {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+    }
+
+    .searchUser-flex {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .searchUser-flex input {
+        
+        width: 500px;
+        flex-grow: 1;
+    }
+
+    .searchUser-container {
+        margin:50px;
+    }
+
+    .nes-text{
+        margin:10px;
+    }
+</style>
+
+<!-- Permet de se connecter au Websocket -->
 <body onload="connectToWebsocket();"></body>
-    <div>
-        <input type="text" id="searchText" placeholder="mathis.friess">
-        <strong>@etu.umontpellier.fr</strong><br>
-        <button id="sumbitButton" onclick="displayUser()">Chercher</button><br>
-        <span id="searchRes"></span>
+    <div class="nes-container with-title is-centered searchUser-container">
+        <p class="title">Chercher un utilisateur</p>
+
+        <!-- Input pour chercher un utilisateur -->
+        <div class="searchUser-flex">
+            <div class="nes-field">
+                <!-- <label for="searchText">Mail</label> -->
+                <input type="text" id="searchText" class="nes-input" placeholder="alois.drucke">
+            </div>
+            @etu.umontpellier.fr
+        </div>
+
+        <!-- Bouton permettant d'envoyer la requete -->
+        <button id="sumbitButton" class="nes-btn is-success" onclick="displayUser()">Chercher</button><br><br>
+
+        <!-- Message de la requete -->
+        <span id="searchRes" class="nes-text is-disabled">Essayez un mail</span>
     </div>
+
+    <!-- Resultat de la requete -->
     <div id="foundUser"></div>
+
+    <!-- Div contenant les chats -->
     <div id="chat"></div>
-    
-    
+
 </body>
 </html>

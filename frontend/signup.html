@@ -4,30 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="js/script.js"></script>
-
-    <title>Sign-up</title>
+    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
+    <style>
+        html, body, pre, code, kbd, samp {
+            font-family: "Press Start 2P";
+        }
+    </style>
+    <title>Inscription</title>
 </head>
 <body>
-    <div>
-        <span><strong>Inscription</strong></span>
-        <div>
-            <label for="name">Nom :</label>
-            <input type="text" id="name" name="name" required> <br>
+    <style>
+        /* modifie la largeur du container de connexion */
+        .center-container {
+            width: 66%; 
+            margin: 10px auto;
+            position: relative;
+            /* top: 50%;
+            left: 50%; */
+            /* transform: translate(-50%, -50%); */
+        }
 
-            <label for="lastname">Prénom :</label>
-            <input type="text" id="lastname" name="lastname" required> <br>
+        .selectable {
+            cursor: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAzElEQVRYR+2X0Q6AIAhF5f8/2jYXZkwEjNSVvVUjDpcrGgT7FUkI2D9xRfQETwNIiWO85wfINfQUEyxBG2ArsLwC0jioGt5zFcwF4OYDPi/mBYKm4t0U8ATgRm3ThFoAqkhNgWkA0jJLvaOVSs7j3qMnSgXWBMiWPXe94QqMBMBc1VZIvaTu5u5pQewq0EqNZvIEMCmxAawK0DNkay9QmfFNAJUXfgGgUkLaE7j/h8fnASkxHTz0DGIBMCnBeeM7AArpUd3mz2x3C7wADglA8BcWMZhZAAAAAElFTkSuQmCC) 14 0, pointer;
+        }
 
-            <label for="mail">E-mail :</label>
-            <input type="text" id="mail" name="mail" required> <br>
+        .selectable:hover {
+            filter: brightness(1.05) contrast(1.1) drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.7)) drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.5)) drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.3));
+        }
 
-            <label for="password">Mot de passe :</label>
-            <input type="password" id="password" name="password" required> <br>
+        /* Modifie la largeur du container des avatars pour tous les afficher */
+        .avatar-container {
+            width: 66%; 
+            margin: 10px auto;
+            position: relative;
+            /* top: 50%;    
+            left: 50%; */
+            /* transform: translate(-50%, -50%); */
+        }
+    </style>
 
-            <label for="passwordConfirmation">Confirmation :</label>
-            <input type="password" id="passwordConfirmation" name="passwordConfirmation" required> <br>
-            
-            <button onclick="signupSubmit()">Inscription</button> <br><br>
-        </div>   
+    <!-- Partie information d'inscription -->
+    <div class="nes-container with-title is-centered center-container">
+        <p class="title">Inscription</p>
+        <div class="item">
+
+            <div class="nes-field">
+                <label for="name">Prenom</label>
+                <input type="text" id="name" class="nes-input" required>
+            </div>
+
+            <div class="nes-field">
+                <label for="lastname">Nom</label>
+                <input type="text" id="lastname" class="nes-input" required>
+            </div>
+
+            <div class="nes-field">
+                <label for="mail">E-mail</label>
+                <input type="text" id="mail" class="nes-input" required>
+            </div>
+
+            <div class="nes-field">
+                <label for="password">Mot de passe</label>
+                <input type="text" id="password" class="nes-input" required>
+            </div>
+
+            <div class="nes-field">
+                <label for="passwordConfirmation">Confirmation</label>
+                <input type="text" id="passwordConfirmation" class="nes-input" required>
+            </div>
+        </div>
+    </div>
+    <!-- Div pour choisir l'avatar -->
+    <div class="nes-container with-title is-centered avatar-container">
+        <p class="title">Choisis ton avatar</p>
+        <section id="icon-list" class="icon-list is-small">
+            <i id="mario" class="nes-mario selectable" onclick="selectAvatar('mario')"></i>
+            <i id="ash" class="nes-ash selectable" onclick="selectAvatar('ash')"></i>
+            <i id="pokeball" class="nes-pokeball selectable" onclick="selectAvatar('pokeball')"></i>
+            <i id="bulbasaur" class="nes-bulbasaur selectable" onclick="selectAvatar('bulbasaur')"></i>
+            <i id="charmander" class="nes-charmander selectable" onclick="selectAvatar('charmander')"></i>
+            <i id="squirtle" class="nes-squirtle selectable" onclick="selectAvatar('squirtle')"></i>
+            <i id="kirby" class="nes-kirby selectable" onclick="selectAvatar('kirby')"></i>
+            <input type="hidden" id="selected-image-id" value="none">
+          </section>
+    </div>
+    <div class="nes-container with-title is-centered center-container">
+        <button onclick="signupSubmit()" class="nes-btn is-success">Inscription</button>
         <span id="resText"></span>
     </div>
 </body>

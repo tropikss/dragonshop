@@ -4,21 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="js/script.js"></script>
-
+    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
+    <style>
+        html, body, pre, code, kbd, samp {
+            font-family: "Press Start 2P";
+        }
+    </style>
     <title>Log-in</title>
 </head>
 <body>
-    <div>
-        <span><strong>Connexion</strong></span>
-        <div>
-            <label for="mail">E-mail :</label>
-            <input type="text" id="mailField" name="mail" required> <br>
+    <style>
+        /* modifie la largeur du container de connexion */
+        .center-container {
+            width: 50%; 
+            margin: 0 auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+    <div class="nes-container with-title is-centered center-container">
+        <p class="title">Connexion</p>
+            <div class="nes-field">
+                <label for="mailField">E-mail</label>
+                <input type="text" id="mailField" class="nes-input">
+            </div>
 
-            <label for="password">Mot de passe :</label>
-            <input type="password" id="passwordField" name="password" required> <br>
+            <div class="nes-field">
+                <label for="passwordField">Mot de passe</label>
+                <input type="text" id="passwordField" class="nes-input">
+            </div><br><br>
             
-            <button onclick="loginSubmit()">Connexion</button> <br><br>
-        </div>   
+            
+            <button onclick="loginSubmit()" class="nes-btn is-success">Connexion</button> <br><br>
         <span id="resText"></span>
     </div>
 </body>

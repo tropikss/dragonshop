@@ -31,16 +31,29 @@ const usersCollection = db.collection('users');
 */
 // L4HEfJzdFX7tcgKI
 
+//docker run -d -p 27017:27017 --name my_mongo mongo
+
 const MongoClient = require('mongodb').MongoClient;
 
 const uri = 'mongodb://localhost:27017';
 
 const client = new MongoClient(uri);
-const DB_NAME = 'my_DB'
+
+mongo();
+
+async function mongo() {
+  try {
+    await client.connect();
+    console.log("Connexion a la bdd réussie");
+  } catch(error) {
+    console.error('Erreur lors de la connexion à MongoDB:', error);
+  }
+}
+
+const DB_NAME = 'web';
 const db = client.db(DB_NAME);
 const usersCollection = db.collection('users');
-
-
+const conversationsCollection = db.collection('conversations');
 
 app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
 app.use(bodyparser.json());
@@ -66,11 +79,71 @@ async function asyncSearch(request) {
   return db.command(request);
 }
 
+app.post('/conversation/get', async(req, res) => {
+  const data = req.body;
+
+  const userId = data.userId;
+  const nbMessages = data.nbMessages;
+
+  var sortedMail1;
+  var sortedMail2;
+
+  // On trie nos mails par ordre alphabétique pour rechercher plus facilement dans la bdd si une ocnversation existe
+  if(data.mail1 < data.mail2) {
+    sortedMail1 = data.mail1;
+    sortedMail2 = data.mail2;
+  } else {
+    sortedMail2 = data.mail1;
+    sortedMail1 = data.mail2;
+  }
+
+  var request = await usersCollection.find({"userId":userId}).toArray();
+
+  if(request != undefined) {
+
+    // Un seul utilisateur avec l'userId
+    if(request.length == 1) {
+
+      // On vérifie qu'au moins un des deux mail a qui le message est destiné correspondent a l'userId
+      if(await request[0].mail == sortedMail1 || await request[0].mail == sortedMail2) {
+
+        // On cherche une conversation correspondant aux deux mails
+        request = await conversationsCollection.find({"mail1":sortedMail1, "mail2":sortedMail2}).toArray();
+
+        // On vérifie qu'une seule conversation corresponde sinon erreur 
+        if(request.length == 1) {
+          const tabLength = request[0].messages.length;
+          var newData = [];
+
+          if(nbMessages <= tabLength) {
+            for(let i = 0; i < nbMessages; i++) {
+              newData.push(request[0].messages[tabLength-nbMessages+i]);
+            }
+          } else {
+            newData = request[0].messages;
+          }
+          res.status(200).send(newData);
+        } else {
+        console.log("La conversation n'existe pas");
+        res.status(400).send("La conversation n'existe pas");
+        }
+      } else {
+        console.log("Le mail ne correspond pas a l'userId");
+        res.status(400).send("Le mail ne correspond pas a l'userId");
+      }
+    } else {
+      console.log("erreur userId");
+      res.status(400).send("Erreur userId");
+    }
+  } else {
+    console.log("UserId invalide");
+    res.status(400).send("UserId invalide");
+  }
+});
+
 app.get("/users/search/:filter/:field", async (req, res) => {
   const filter = req.params.filter;
   const field = req.params.field;
-  console.log(filter);
-  console.log(field);
 
   const request = {
     find:"users",
@@ -82,20 +155,17 @@ app.get("/users/search/:filter/:field", async (req, res) => {
   const resTab = [];
 
   documents.forEach((doc, index) => {
-    console.log(`Document ${index + 1}:`, doc);
     resTab.push(doc);
   });
 
   if(resTab[0] != undefined) {
     res.send(resTab);
-    console.log(resTab);
   } else {
     res.status(204).end();
   }
 });
 
 app.post('/signup', async (req, res) => {
-  console.log(req.body);
 
   const request = {
     find:"users",
@@ -104,7 +174,6 @@ app.post('/signup', async (req, res) => {
 
   var rep = await asyncSearch(request);
   rep = rep.cursor.firstBatch[0];
-  console.log(rep);
 
   if(rep != undefined) {
     res.status(400).end();
@@ -113,7 +182,6 @@ app.post('/signup', async (req, res) => {
 
   const hashedPassword = await hashPassword(req.body.password);
   const userId = await newUserId();
-  console.log(userId);
 
   const newuser = {
     "name" : req.body.name,
@@ -121,6 +189,7 @@ app.post('/signup', async (req, res) => {
     "mail": req.body.mail,
     "password": hashedPassword,
     "userId": userId,
+    "avatar": req.body.avatar,
     "role": "client" // client, admin
   }
 
@@ -193,8 +262,115 @@ app.get("/admin/:userId", async (req, res) => {
   }
 });
 
+app.post('/conversation/new-message', async(req, res) => {
+  const data = req.body;
+  // On garde en variable l'envoyeur du message
+  const sender = data.mail1;
+
+  var sortedMail1;
+  var sortedMail2;
+
+  // On trie nos mails par ordre alphabétique pour rechercher plus facilement dans la bdd si une ocnversation existe
+  if(data.mail1 < data.mail2) {
+    sortedMail1 = data.mail1;
+    sortedMail2 = data.mail2;
+  } else {
+    sortedMail2 = data.mail1;
+    sortedMail1 = data.mail2;
+  }
+
+  const userId = data.userId;
+  const message = data.message;
+
+  var request = await usersCollection.find({"userId":userId}).toArray();
+
+  if(request != undefined) {
+
+    // Un seul utilisateur avec l'userId
+    if(request.length == 1) {
+
+      // On vérifie qu'au moins des deux mail a qui le message est destiné correspondent a l'userId
+      if(await request[0].mail == sortedMail1 || await request[0].mail == sortedMail2) {
+
+        // On cherche une conversation correspondant aux deux mails
+        request = await conversationsCollection.find({"mail1":sortedMail1, "mail2":sortedMail2}).toArray();
+
+        // On vérifie qu'une seule conversation corresponde sinon erreur 
+        if(request.length == 1) {
+          console.log("tentative ajout message bdd");
+
+          // On récupère l'id et on push le nouveau message
+          const id = request[0]._id;
+          const result = await conversationsCollection.updateOne(
+            { _id: id }, // Filtre pour sélectionner la conversation spécifique
+            { 
+                $push: { 
+                    messages: {"sender":sender, "content":message} 
+                } 
+            }
+        );
+
+        if (result.modifiedCount === 1) {
+            console.log("Conversation mise à jour avec succès");
+            res.status(200).send("La conversation a été mise a jour");
+        } else {
+            console.log("La conversation n'a pas été trouvée ou n'a pas été mise à jour");
+            res.status(400).send("La conversation n'a pas été trouvé");
+        }
+        } else {
+          console.log("Plusieurs conversation avec les memes mail");
+          console.log("request length : "+request.length);
+          res.status(400).send("Plusieurs conversations avec les memes mail");
+        }
+      } else {
+        console.log("Les mails ne correspondent pas");
+        res.status(400).send("Les mails ne correspondent pas");
+      }
+    } else {
+      console.log("UserId incorrect");
+      res.status(400).send("UserId incorrect");
+    }
+  }
+})
+
+// Route permettant de créer une nouvelle conversation a base 
+app.post('/conversation/new', async (req, res) => {
+  const data = req.body;
+  var mail1;
+  var mail2;
+
+  if(req.body.mail1 < req.body.mail2) {
+    mail1 = req.body.mail1;
+    mail2 = req.body.mail2;
+  } else {
+    mail2 = req.body.mail1;
+    mail1 = req.body.mail2;
+  }
+
+  if(mail1 == mail2) {
+    res.status(400).send("Mails identiques");
+    console.log("Mails identiques");
+    return;
+  }
+
+  const convlist = await conversationsCollection.find({"mail1":mail1, "mail2":mail2}).toArray();
+  alreadyExist = convlist.length != 0;
+
+    if (alreadyExist) {
+      return res.status(400).send("La conversation existe deja");
+    } else {
+      var newData = {
+        "mail1": mail1,
+        "mail2": mail2,
+        "messages":[]
+      }
+
+      await insertdb(conversationsCollection, newData);
+      res.status(200).send("Conversation crée");
+    }
+  })
+
 app.post('/login', async (req, res) => {
-  console.log(req.body);
 
   const passwordAttempt = await req.body.password;
   const mail = await req.body.mail;
@@ -205,18 +381,13 @@ app.post('/login', async (req, res) => {
   };
 
   var rep = await asyncSearch(request);
-  console.log(rep.cursor.firstBatch);
   rep = rep.cursor.firstBatch[0];
   if(rep == undefined) {
     console.log("Aucun mail ne correspond");
     res.status(205).end();
     return;
   }
-  console.log(rep)
   const passwordBdd = rep.password;
-
-  console.log("attempt: "+passwordAttempt);
-  console.log("bdd: "+passwordBdd);
 
   bcrypt.compare(passwordAttempt, passwordBdd)
     .then(async match => {
@@ -277,6 +448,7 @@ async function connectToMongo() {
 
 function insertdb(collection, doc) {
 
+  console.log("tentative d'insertion");
   collection.insertOne(doc, (err, result) => {
     if (err) {
       console.error('Erreur lors de l\'insertion du document :', err);
@@ -287,7 +459,8 @@ function insertdb(collection, doc) {
 }
 
 function searchdb(collection, champ, valeur) {
-    collection.find({ [champ]: valeur }).toArray((err, documents) => {
+  console.log("Tentative searchdb");
+    collection.find({ [champ]: [valeur] }).toArray((err, documents) => {
       if (err) {
         console.error('Erreur lors de la recherche des documents :', err);
         reject(err);

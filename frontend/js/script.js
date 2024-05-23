@@ -2,34 +2,42 @@
 //const bcryptjsjs = require('bcryptjsjsjs');
 // Dragonshop38
 
-// TYPES : 
+// Définition de socket qui permet a tout le monde de communiquer avec le websocket 
+var socket;
 
-// Définie les caracteristiques d'un utilsateur
+// --------------------------------- STRUCTURES --------------------------------
+
+// Définie les caracteristiques d'un utilisateur
 class User {
-  constructor(name, lastname, mail, password) {
+  constructor(name, lastname, mail, password, avatar) {
       this.name = name;
       this.lastname = lastname;
       this.mail = mail;
       this.password = password;
+      this.avatar = avatar;
   }
 } 
 
-// Permet de récupérer la valeur du cookie avec le nom indiqué
-// getCookie(String) -> String
-// getCookie("UserId") -> aA5bC-4g6...
-function getCookie (nom) {
-  nom = nom + "=";
-  var liste = document.cookie.split (';');
-  for (var i = 0; i < liste.length; i++) {
-      var c = liste[i];
-      while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nom) == 0) return c.substring(nom.length, c.length);
+// Crée un conversation entre deux utilisateurs
+class Conversation {
+  constructor(mail1, mail2) {
+    this.mail1 = mail1;
+    this.mail2 = mail2;
+    this.messages = [];
+    this.nbMessages = 0;
   }
-  return null;
 }
 
-// Permet de définir les boutons de connexion, deconnexion etc...en fonction de l'utilisateur
-async function userInfo() {
+//|-|-|-|-|-|-|-|-|-|-|-|-|- PAGES |-|-|-|-|-|-|-|-|-|-|-|-|-
+
+// ------------------ stockage messages ---------------------
+
+// ------------------------- index --------------------------
+/*
+  Page "index"
+  Permet de définir les boutons de connexion, deconnexion etc...en fonction de l'utilisateur
+*/
+async function index() {
   if (document.cookie.includes('userId')) { // Cherche le cookie userId (si l'utilisateur est bien connecté)
 
     const userId = getCookie("userId");
@@ -41,21 +49,25 @@ async function userInfo() {
     if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
       
+      // Bouton deconnexion
       var button = document.createElement("button");
       button.setAttribute("onclick", "logout()");
       button.textContent = "Déconnexion";
       document.getElementById("logButton").appendChild(button);
 
+      // Bouton mon compte
       button = document.createElement("button");
       button.setAttribute("onclick", "window.location.href='account.html'");
       button.textContent = "Mon compte";
       document.getElementById("logButton").appendChild(button);
 
+      // Messagerie
       button = document.createElement("button");
       button.setAttribute("onclick", "window.location.href='chat.html'");
       button.textContent = "Messagerie";
       document.getElementById("logButton").appendChild(button);
       
+      // Page admin
       if(res.role =="admin") {
         const button = document.createElement("button");
         button.setAttribute("onclick", "window.location.href='admin.html'");
@@ -66,11 +78,13 @@ async function userInfo() {
   } else {
     console.log('Le cookie userId n\'est pas présent.');
 
+    // Connexion
     const loginButton = document.createElement("button");
     loginButton.setAttribute("onclick", "window.location.href='login.html'");
     loginButton.textContent = "Connexion";
     document.getElementById("logButton").appendChild(loginButton); 
 
+    // Inscription
     const signupButton = document.createElement("button");
     signupButton.setAttribute("onclick", "window.location.href='signup.html'");
     signupButton.textContent = "Inscription";
@@ -78,135 +92,56 @@ async function userInfo() {
   }
 }
 
-async function getAdmin() {
- const userId = getCookie("userId");
- console.log(userId);
- if(userId != null ) {
-  var res = await getServer("http://localhost:3000/admin/"+userId);
-  console.log(await res);
-  res = await res.json();
-  console.log(res);
-  if(res.status == 200) {
-    document.getElementById("search").innerHTML = res.html;
-    return;
-  } else {
-    document.getElementById("search").innerHTML = res.html;
-    return;
-  }
- } else {
-  document.getElementById("search").innerHTML = "<strong>Vous n'etes pas connecté</strong>";
-}
-}
-
-async function loadAccount() {
-  if (document.cookie.includes('userId')) {
-    console.log('Le cookie userId est présent.');
-    const userId = getCookie("userId");
-    console.log(userId);
-
-    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
-    console.log(res);
-
-    if(res != undefined) {
-      res = (await res.json())[0];
-      console.log(res);
-
-      const resText = document.createElement("strong");
-      resText.textContent = "Vos informations : ";
-
-      const resName = document.createElement("div");
-      resName.textContent = "Prenom : "+res.name;
-
-      const resLastname = document.createElement("div");
-      resLastname.textContent = "Nom : "+res.lastname;
-
-      const resMail = document.createElement("div");
-      resMail.textContent = "Mail : "+res.mail;
-
-      document.getElementById("userInfo").appendChild(resText);
-      document.getElementById("userInfo").appendChild(resName);
-      document.getElementById("userInfo").appendChild(resLastname);
-      document.getElementById("userInfo").appendChild(resMail);
-
-    } else {
-      const text = document.createElement("strong");
-      text.textContent = "Vous n'etes pas connecté";
-
-      document.getElementById("userInfo").appendChild(text);
-    }
-  }
-}
-
+// Permet de se deconnecter en supprimant le cookie userId et en raffraichissant la page
 function logout() {
   document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   location.reload();
 }
 
-async function loginSubmit() {
-  const mail = document.getElementById("mailField").value.toLowerCase();
-  const password = document.getElementById("passwordField").value;
-  console.log(mail);
-  const hashedPassword = await hashPassword(password);
+// ------------------------- admin --------------------------
 
-  const loginData = {mail:mail, password:hashedPassword};
+/*
+  Page "admin"
+  Modifie l'html pour afficher la page admin
+*/
+async function admin() {
 
-  const requestOptions = {
-    method: 'POST', // Méthode de la requête
-    headers: {
-      'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
-    },
-    body:JSON.stringify(loginData) // Corps de la requête, converti en JSON
-  };
-    
-  fetch('http://localhost:3000/login', requestOptions)
-      .then(response => {
-        if(response.status == 205) {
-          console.log("Email introuvable");
-          document.getElementById("resText").style.color = "red";
-          document.getElementById("resText").style.fontWeight = "bold";
-          document.getElementById("resText").textContent = "Email incorrect";
-        } else if(response.status == 204) {
-          document.getElementById("resText").style.color = "red";
-          document.getElementById("resText").style.fontWeight = "bold";
-          document.getElementById("resText").textContent = "Mot de passe incorrect";
-        } else if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log(data.message);
+  // Vérification de l'userId
+  const userId = getCookie("userId");
+  console.log(userId);
 
-        document.getElementById("resText").style.color = "green";
-        document.getElementById("resText").style.fontWeight = "bold";
-        document.getElementById("resText").textContent = "Connexion réussie";
-        window.location.href = "index.html";
-        createCookie("userId", data.userId, 30);
-      }) 
-      .catch(error => {
-          console.error('There has been a problem with your fetch operation:', error);
-      });
+ if(userId != null ) {
+
+  // Verification si l'utilisateur est bien admin
+  // /admin/userId permet de vérifier que l'userId indiqué est bien admin
+  //    - 200 pour oui
+  var res = await getServer("http://localhost:3000/admin/"+userId);
+  console.log(await res);
+  res = await res.json();
+  console.log(res);
+
+  // La page est dans "html" dans la réponse
+  document.getElementById("search").innerHTML = res.html;
+  return;
+
+ } else {
+  document.getElementById("search").innerHTML = "<strong>Vous n'etes pas connecté</strong>";
+}
 }
 
-async function hashPassword(password) {
-  // Convertir le mot de passe en tableau de bytes
-  const passwordBuffer = new TextEncoder().encode(password);
-  
-  // Calculer le hachage SHA-256
-  const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+/*
+  Page "admin"
+  Modifie les informations de l'utilisateur indiqué en entrée
+  Comprend une vérification de l'userId (administrateur)
 
-  // Convertir le hachage en chaîne hexadécimale
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-
-  return hashHex;
-}
-
+ Prend en parametre l'id de la div correspondant a notre utilisateur et modifie ses données
+*/
 async function userInfoChange(i) {
 
   const userId = await getCookie("userId");
   console.log(userId);
 
+  // Récupération de tout les id avec name, lastname et mail
   const names = document.querySelectorAll('[data-type="name"]');
   const lastnames = document.querySelectorAll('[data-type="lastname"]');
   const mails = document.querySelectorAll('[data-type="mail"]');
@@ -215,6 +150,7 @@ async function userInfoChange(i) {
   var lastname;
   var mail;
   
+  // On cherche ceux correspondant a notre id
   names.forEach(el => {
     if(el.getAttribute("i") == i.toString()) {
       name = el.value;
@@ -230,10 +166,11 @@ async function userInfoChange(i) {
       mail = el.textContent;
     }
   })
-  console.log(name);
-  console.log(lastname);
-  console.log(mail);
 
+  /* 
+    /changeUserInfo/userId/name/lastname/mail
+    Permet de changer le nom prénom de l'utilisateur correspondant au mail, vérification avec l'userId des autorisations
+  */
   const res = await getServer("http://localhost:3000/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
   if(await res.status == 200) {
     console.log("modification effectué avec succès");
@@ -243,6 +180,11 @@ async function userInfoChange(i) {
   }
 }
 
+/*
+  Page "admin"
+  Executé lorsque l'on clique sur "chercher" dans la page admin
+  Permet de d'afficher les utilisateurs cherchés et de modifier leurs informations
+*/
 async function searchUserAdmin() {
   const field = document.getElementById("searchField").value;
   const filter = document.getElementById("searchFilter").value;
@@ -324,6 +266,690 @@ async function searchUserAdmin() {
   }
 }
 
+// ------------------------- account --------------------------
+
+// Permet de charger les informations de l'utilisateur
+async function account() {
+
+  if (document.cookie.includes('userId')) {
+    console.log('Le cookie userId est présent.');
+    const userId = getCookie("userId");
+    console.log(userId);
+
+    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    console.log(res);
+
+    if(res != undefined) {
+      res = (await res.json())[0];
+      console.log(res);
+
+      const resText = document.createElement("strong");
+      resText.textContent = "Vos informations : ";
+
+      const resName = document.createElement("div");
+      resName.textContent = "Prenom : "+res.name;
+
+      const resLastname = document.createElement("div");
+      resLastname.textContent = "Nom : "+res.lastname;
+
+      const resMail = document.createElement("div");
+      resMail.textContent = "Mail : "+res.mail;
+
+      const avatar = document.createElement("i");
+      avatar.setAttribute("class","nes-"+res.avatar);
+
+      document.getElementById("userInfo").appendChild(resText);
+      document.getElementById("userInfo").appendChild(resName);
+      document.getElementById("userInfo").appendChild(resLastname);
+      document.getElementById("userInfo").appendChild(resMail);
+      document.getElementById("userInfo").appendChild(avatar);
+
+    } else {
+      const text = document.createElement("strong");
+      text.textContent = "Vous n'etes pas connecté";
+
+      document.getElementById("userInfo").appendChild(text);
+    }
+  }
+}
+
+// ------------------------- login ----------------------------
+
+/*  
+  Executée lorsque l'on clique sur le bouton "connexion"
+  Récupère les données de connexion, les encryptes, et les envoies. Ensuite suivant la réponse elle
+    affiche les erreurs ou connecte l'utilisateur en le redirigant 
+*/
+async function loginSubmit() {
+
+  // Récupération des données
+  const mail = document.getElementById("mailField").value.toLowerCase();
+  const password = document.getElementById("passwordField").value;
+
+  // Encryptage
+  const hashedPassword = await hashPassword(password);
+
+  const loginData = {
+    mail:mail, 
+    password:hashedPassword
+  };
+
+  // Requete POST pour le serveur
+  const requestOptions = {
+    method: 'POST', // Méthode de la requête
+    headers: {
+      'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
+    },
+    body:JSON.stringify(loginData) // Corps de la requête, converti en JSON
+  };
+    
+  fetch('http://localhost:3000/login', requestOptions)
+      .then(response => {
+        // Gestion des erreurs
+
+        // 205 = email introuvable
+        if(response.status == 205) {
+          console.log("Email introuvable");
+          document.getElementById("resText").style.color = "red";
+          document.getElementById("resText").style.fontWeight = "bold";
+          document.getElementById("resText").textContent = "Email incorrect";
+
+        // 204 = mot de passe inccorect
+        } else if(response.status == 204) {
+          document.getElementById("resText").style.color = "red";
+          document.getElementById("resText").style.fontWeight = "bold";
+          document.getElementById("resText").textContent = "Mot de passe incorrect";
+
+        // Gestion des autres erreurs
+        } else if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        return response.json();
+      })
+      .then(data => {
+        console.log(data.message);
+
+        document.getElementById("resText").style.color = "green";
+        document.getElementById("resText").style.fontWeight = "bold";
+        document.getElementById("resText").textContent = "Connexion réussie";
+
+        // Redirection et ajout du cookie userId pour une durée de 30 minutes
+        window.location.href = "index.html";
+        createCookie("userId", data.userId, 60);
+      }) 
+      .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+      });
+}
+
+// Retourne le mot de passe en entré encrypté
+async function hashPassword(password) {
+  // Convertir le mot de passe en tableau de bytes
+  const passwordBuffer = new TextEncoder().encode(password);
+  
+  // Calculer le hachage SHA-256
+  const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+
+  // Convertir le hachage en chaîne hexadécimale
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+
+  return hashHex;
+}
+
+// ------------------------- signup ---------------------------
+
+function selectAvatar(name) {
+  const div = document.getElementById("selected-image-id");
+  const avatar = document.getElementById(name);
+
+  // Réinitialiser les autres avatars
+  const allAvatars = document.querySelectorAll(".selectable");
+  allAvatars.forEach(otherAvatar => {
+      otherAvatar.style.filter = "brightness(1) contrast(1)"; // Réinitialiser les filtres
+  });
+
+  // Appliquer les styles à l'avatar sélectionné
+  div.value = name;
+  avatar.style.filter = "brightness(1.05) contrast(1.1) drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.7)) drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.5)) drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.3))";
+
+}
+
+/*
+  Permet d'envoyer le formulaire d'inscription d'un nouvel utilisateur
+  Encryptage, gestions des erreurs etc... 
+*/
+async function signupSubmit() {
+  const name = document.getElementById("name").value.toLowerCase();
+  const lastname = document.getElementById("lastname").value.toLowerCase();
+  const mail = document.getElementById("mail").value.toLowerCase();
+  const password = document.getElementById("password").value;
+  const passwordConfirmation = document.getElementById("passwordConfirmation").value;
+  const avatar = document.getElementById("selected-image-id").value;
+
+  console.log(avatar);
+
+  let emailPattern = /^[a-zA-Z0-9._%+-]+@etu.umontpellier\.fr$/;
+
+  if(avatar != "none") {
+    console.log("avatar ok");
+  } else {
+    console.log("L'avatar n'est pas valide.");
+    document.getElementById("resText").style.color = "red";
+    document.getElementById("resText").style.fontWeight = "bold";
+    document.getElementById("resText").textContent = "Choisissez un avatar";
+    return;
+  }
+
+if (emailPattern.test(mail)) {
+  console.log("L'adresse e-mail est valide.");
+} else {
+  console.log("L'adresse e-mail n'est pas valide.");
+  document.getElementById("resText").style.color = "red";
+  document.getElementById("resText").style.fontWeight = "bold";
+  document.getElementById("resText").textContent = "Mail incorrect, utilisez un mail univ Montpellier";
+  return;
+}
+
+  if(password != passwordConfirmation) {
+    document.getElementById("resText").style.color = "red";
+    document.getElementById("resText").style.fontWeight = "bold";
+    document.getElementById("resText").textContent = "Les mots de passe ne correspondent pas";
+    return;
+  }
+
+const hashedPassword = await hashPassword(password);
+const user = new User(name, lastname, mail, hashedPassword, avatar);
+console.log(user);
+
+const requestOptions = {
+method: 'POST', // Méthode de la requête
+headers: {
+  'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
+},
+body: JSON.stringify(user) // Corps de la requête, converti en JSON
+};
+
+fetch('http://localhost:3000/signup', requestOptions)
+  .then(response => {
+    if(response.status == 400) {
+      document.getElementById("resText").style.color = "red";
+      document.getElementById("resText").style.fontWeight = "bold";
+      document.getElementById("resText").textContent = "Cet email est deja utilisé";
+      console.log("Cet email est deja utilisé");
+      return undefined;
+
+    } else if (!response.ok) {
+          throw new Error('Network response was not ok');
+      }
+      return response.json();
+  })
+  .then(data => {
+    console.log(data.message);
+
+    document.getElementById("resText").style.color = "green";
+    document.getElementById("resText").style.fontWeight = "bold";
+    document.getElementById("resText").textContent = "Inscription réussie";
+    window.location.href = "index.html";
+    createCookie("userId", data.userId, 30);
+    
+  }) 
+  .catch(error => {
+      console.error('There has been a problem with your fetch operation:', error);
+  });
+}
+
+// ------------------------- chat -----------------------------
+
+/*
+  Permet d'ajouter un message a une conversation
+  On renseigne le mail de la conversation puis le message qui est a ajouter
+*/
+async function addMessage(mail, message, self) {
+  // mail : mail de la la personne qui a envoyé le message
+
+  // On récupère dans un premier temps le container correspondant a notre mail, ensuite le div correspondant aux messages
+  const chatContainer = document.getElementById(mail);
+  const chat = chatContainer.querySelector(".message-list");
+
+  // Container du message, permet d'afficher le message correctement a droite ou a gauche
+  const msgContainer = document.createElement("section");
+
+  if(self) {
+    const selfMail = await getCurrentMail();
+    res = await getServer("http://localhost:3000/users/search/mail/"+selfMail);
+  } else {
+    res = await getServer("http://localhost:3000/users/search/mail/"+mail);
+  }
+
+  if(res != undefined) {
+    res = await res.json();
+    res = res[0];
+  
+    const avatar = document.createElement("i");
+
+    if(self) {
+      msgContainer.setAttribute("class","message -right");
+    } else {
+      msgContainer.setAttribute("class","message -left");
+      avatar.style.transform = "scaleX(-1)";
+    }
+
+    // Avatar de la discussion
+    avatar.setAttribute("class", "nes-"+res.avatar);
+    
+      // Permet d'afficher la petite bulle correctement
+      const msgDiv = document.createElement("div");
+      msgDiv.className = self ? "nes-balloon from-right" : "nes-balloon from-left";
+
+      // Partie emoji
+      if(message[0] == "/") {
+
+        const emojiDiv = document.createElement("section");
+        emojiDiv.setAttribute("class", "nes-icon is-medium");
+
+        const emoji = document.createElement("i");
+        emoji.setAttribute("class", "nes-"+message.slice(1));
+
+        emojiDiv.appendChild(emoji);
+        msgDiv.appendChild(emojiDiv);
+      } else {
+        // Message en lui même
+        const msg = document.createElement("p");
+        msg.textContent = message;
+
+        msgDiv.appendChild(msg);
+      }
+
+    if(self) {
+      msgContainer.appendChild(msgDiv);
+      msgContainer.appendChild(avatar);
+    } else {
+      msgContainer.appendChild(avatar);
+      msgContainer.appendChild(msgDiv);
+    }
+
+    chat.appendChild(msgContainer);
+    scrollToBottom(mail);
+  }
+}
+
+async function loadMessages(selfMail, otherMail) {
+  const userId = getCookie("userId");
+  const nbMessages = 10;
+
+  const postData = {
+    "userId":userId,
+    "mail1":selfMail,
+    "mail2":otherMail,
+    "nbMessages":nbMessages
+  }
+  console.log(postData);
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/conversation/get';
+
+console.log("tentative nouvelle conversation");
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Récuperation conversation réussie");
+            return response.json();
+        } else {
+          return response.text().then(text => { throw new Error(text) });
+        }
+      })
+    .then(async data => {
+      console.log(data);
+      for(let i = 0; i < data.length; i++) {
+        await addMessage(otherMail, data[i].content, data[i].sender == selfMail);
+      }
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
+}
+
+/*
+  Créer une nouvelle fenetre de chat sur le front
+  On renseigne le mail du destinataire et son propre mail
+*/
+async function newChat(selfMail, otherMail) {
+
+  const postData = {
+    "mail1" : selfMail,
+    "mail2" : otherMail
+  };
+
+  // ----------- On teste si on peut créer une nouvelle conversation
+  
+  // Options de la requête
+  const requestOptions = {
+      method: 'POST', // Méthode HTTP POST
+      headers: {
+          'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+      },
+      body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+  };
+  
+  // URL de l'endpoint de l'API
+  const url = 'http://localhost:3000/conversation/new';
+  
+  console.log("tentative nouvelle conversation");
+  // Effectuer la requête POST avec l'API Fetch
+  fetch(url, requestOptions)
+      .then(response => {
+          if (response.ok) {
+              console.log("Envoi nouvelle conversation serveur réussi");
+          } else {
+            return response.text().then(text => { throw new Error(text) });
+          }
+      })
+      .catch(error => {
+          // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+          console.error('Erreur : ', error);
+      });
+
+  if(!document.getElementById(otherMail)) {
+  
+    const chat = document.getElementById("chat");
+
+    // Container du chat message
+    const container = document.createElement("section");
+    container.setAttribute("class", "nes-container with-title");
+    container.setAttribute("id",otherMail);
+    container.style.margin = "50px";
+    
+    // Titre du container (le destinataire des messages)
+    const title = document.createElement("p");
+    title.setAttribute("class","title");
+    title.textContent = otherMail;
+    container.appendChild(title);
+
+    // Partie message, la ou tout les messages vont se stocker
+    const msglist = document.createElement("section");
+    msglist.setAttribute("class", "message-list");
+    container.appendChild(msglist);
+
+    const inputContainer = document.createElement("span");
+    inputContainer.style.display = "flex";
+    inputContainer.style.gap = "10px";
+
+    // Div pour englober l'input pour ecrire des messages
+    const chatDiv = document.createElement("div");
+    chatDiv.setAttribute("class","nes-field");
+
+    // Input pour ecrire des messages
+    const chatField = document.createElement("input");
+    chatField.setAttribute("class","nes-input limit-width chatField");
+    chatField.type="text";
+    chatField.style.width = "100%";
+
+    chatField.addEventListener("keydown", function(event) {
+      // Vérifie si la touche pressée est "Entrée" (code 13)
+      if (event.key === "Enter" || event.keyCode === 13) {
+        console.log("touche entrée appuyé, -> message");
+        sendMessage(selfMail, otherMail); 
+          // Empêche le comportement par défaut (souvent la soumission du formulaire)
+          event.preventDefault();
+          // Efface le champ de saisie
+          chatField.value = "";
+          // Vous pouvez également ajouter d'autres actions ici, si nécessaire
+      }
+    });
+
+    chatDiv.append(chatField);
+    inputContainer.appendChild(chatDiv);
+
+    const button = document.createElement("button");
+    button.textContent = "Envoyer";
+    button.setAttribute("class","nes-btn is-primary");
+
+    button.onclick = sendMessage(selfMail, otherMail);
+    inputContainer.appendChild(button);
+
+    container.appendChild(inputContainer);
+
+    chat.appendChild(container);
+    loadMessages(selfMail, otherMail);
+  }
+}
+
+function scrollToBottom(mail) {
+  const chatContainer = document.getElementById(mail);
+  const chat = chatContainer.querySelector(".message-list");
+
+  chat.scrollTop += 500;
+}
+
+async function sendMessage(selfMail, otherMail) {
+  var message;
+
+  try {
+    message = document.getElementById(otherMail).getElementsByClassName("chatField")[0].value;
+    console.log("message : "+message);
+  } catch(error) {
+    console.log(error);
+    return;
+  }
+
+  // Si ca n'est pas vide on envoie
+  if(message != "") {
+    var data = {
+      "type":"message",
+      "senderMail":selfMail,
+      "receiverMail":otherMail,
+      "message":message
+    }
+    data = JSON.stringify(data);
+    socket.send(data);
+  
+    const postData = {
+      "mail1" : selfMail,
+      "mail2" : otherMail,
+      "userId": await getCookie("userId"),
+      "message": message
+    };
+    
+    // Options de la requête
+    const requestOptions = {
+        method: 'POST', // Méthode HTTP POST
+        headers: {
+            'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+        },
+        body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+    };
+    
+    // URL de l'endpoint de l'API
+    const url = 'http://localhost:3000/conversation/new-message';
+    
+    // Effectuer la requête POST avec l'API Fetch
+    fetch(url, requestOptions)
+        .then(response => {
+            // Vérifiez si la réponse est OK (status 200)
+            if (response.ok) {
+                // Traitez la réponse
+                console.log("-> "+message);
+                addMessage(otherMail, message, true);
+            }
+            // Gérez les erreurs de réponse
+            throw new Error('Erreur lors de la requête : ' + response.statusText);
+        })
+        .catch(error => {
+            // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+            console.error('Erreur : ', error);
+        });     
+  }
+}
+
+/*
+  Permet de demander a un utilisateur (défini par son mail) s'il souhaite démarrer une conversation
+  A TERMINER (pas de demande réelle, ca crée directement le chat)
+*/
+function askChat(askerMail, askedMail) {
+  const data = {
+    "type":"ask-chat",
+    "askerMail" : askerMail,
+    "askedMail" : askedMail
+  }
+
+  console.log(data);
+  const jsonData = JSON.stringify(data);
+  console.log(jsonData);
+  socket.send(jsonData);
+}
+
+/*
+  Permet d'afficher l'utilisateur cherché dans la page chat
+*/
+async function displayUser() {
+
+  document.getElementById("foundUser").innerHTML = "";
+
+  const mail1 = await getCurrentMail();
+  console.log("current mail : "+mail1);
+  const mail2 = document.getElementById("searchText").value+"@etu.umontpellier.fr";
+
+  res = await getServer("http://localhost:3000/users/search/mail/"+mail2);
+
+  if(res != undefined) {
+    res = await res.json();
+    res = res[0];
+    console.log(res.avatar);
+
+    // On raffraichi la page pour avertir que l'on a bien trouvé l'utilisateur
+    document.getElementById("searchRes").textContent = "Utilisateur trouvé !";
+    document.getElementById("searchRes").className = "nes-text is-success";
+
+    // Container de l'utilisateur trouvé
+    const box = document.createElement("div");
+    box.setAttribute("class","nes-container with-title");
+    box.style.width = "auto";
+    box.style.margin = "50px";
+
+    console.log(res);
+    console.log(res.avatar);
+    const avatar = document.createElement("i");
+    avatar.setAttribute("class","nes-"+res.avatar);
+
+    // Titre du container, on utilise une fonction (capitalize...) pour mettre en majuscule la premiere lettre
+    const title = document.createElement("p");
+    title.setAttribute("class", "title");
+    title.textContent = capitalizeFirstLetter(res.name) + " " + capitalizeFirstLetter(res.lastname);
+    box.appendChild(title); 
+
+    // Temoin d'état de connexion
+    const statusBox = document.createElement("a");
+    statusBox.setAttribute("class", "nes-badge");
+
+    // Bouton pour contacter la personne
+    const button = document.createElement("button");
+    button.textContent = "Contacter";
+    button.addEventListener("click", async function() {
+      askChat(mail1, mail2);
+    });
+
+    // Span du badge
+    const statusSpan = document.createElement("span");
+
+    // On recupere l'état de connexion de l'utilisateur concerné
+    console.log("tentative status");
+    const status = await getStatus(mail2);
+
+    if(status) {
+      statusSpan.setAttribute("class", "is-success");
+      statusSpan.textContent = "Connecté";
+      button.setAttribute("class", "nes-btn");
+      statusBox.appendChild(statusSpan);
+    } else {
+      statusSpan.setAttribute("class", "is-error");
+      statusSpan.textContent = "Déconnecté";
+      button.setAttribute("class", "nes-btn is-disabled");
+      statusBox.appendChild(statusSpan);
+    }
+
+    box.appendChild(statusBox);
+    box.appendChild(document.createElement("br"));
+    box.appendChild(avatar);
+    box.appendChild(document.createElement("br"));
+    box.appendChild(button);
+
+    document.getElementById("foundUser").appendChild(box);
+  
+  } else {
+    document.getElementById("searchRes").textContent = "Utilisateur inexistant";
+    document.getElementById("searchRes").className = "nes-text is-error";
+  }
+}
+
+function getStatus(mail, callback) {
+  return new Promise((resolve, reject) => {
+    // Partie websocket pour connaitre le status de connexion de la personne trouvée
+    const data = {
+      "type":"ask-status",
+      "askedMail" : mail
+    }
+    console.log(data)
+    const jsonData = JSON.stringify(data);
+    socket.send(jsonData);
+
+  // Attendre la réponse du serveur
+    socket.addEventListener('message', function (event) {
+      var data = event.data;
+      console.log("data : "+data);
+      data = JSON.parse(data);
+
+      if(data.type == "status") {
+        if(data.mail == mail) {
+          resolve(data.content == "true"); 
+        }
+      }
+    });
+});
+}
+
+// Fonction d'utilité publique aidant la mise en forme, met la premiere lettre du mot en entrée en majuscule
+function capitalizeFirstLetter(string) {
+  if (!string) return string; // Gérer les cas où la chaîne est vide ou null
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
+// ------------------------- COMMUNES -------------------------
+/*
+ Permet de récupérer la valeur du cookie avec le nom indiqué
+ getCookie(String) -> String | null
+ getCookie("UserId") -> aA5bC-4g6...| null
+*/
+function getCookie (nom) {
+  nom = nom + "=";
+  var liste = document.cookie.split (';');
+  for (var i = 0; i < liste.length; i++) {
+      var c = liste[i];
+      while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nom) == 0) return c.substring(nom.length, c.length);
+  }
+  return null;
+}
+
+/*
+  Renvoie le mail de l'utilisateur actuel
+*/
 async function getCurrentMail() {
   const userId = await getCookie("userId");
 
@@ -342,9 +968,10 @@ async function getCurrentMail() {
   }
 }
 
-var socket;
-var mail1;
-
+/*
+  Permet de se connecter au serveur websocket
+  Transmet son mail afin d'etre identifié
+*/
 async function connectToWebsocket() {
 
   const mailUser = await getCurrentMail();
@@ -363,7 +990,7 @@ async function connectToWebsocket() {
       switch (data.type) {
         case "message":
           console.log(data.content);
-          addMessage(data.mail, data.message)
+          addMessage(data.mail, data.message, false)
           break;
         case "chat-accept":
           console.log("chat-accept");
@@ -385,134 +1012,9 @@ async function connectToWebsocket() {
   });
 }
 
-async function addMessage(mail, message) {
-  var chat = document.getElementById(mail+"-chatContent");
-
-  const msg = document.createElement("div");
-  msg.style.width = "1el";
-  msg.style.height = "25px";
-
-  const currentMail = await getCurrentMail();
-  console.log(await currentMail);
-  console.log(mail);
-
-  if(selfMail == await currentMail) {
-    msg.style.textAlign = "right";
-  } else {
-    msg.style.textAlign = "left";
-  }
-  msg.textContent = message;
-  msg.style.border = "1px solid black";
-
-  chat.appendChild(msg);
-}
-
-function newChat(selfMail, otherMail) {
-  const chat = document.getElementById("chat");
-
-  const box = document.createElement("div");
-  const mailbox = document.createElement("span");
-
-  mailbox.style.fontWeight = "bold";
-  mailbox.textContent = otherMail;
-  box.appendChild(mailbox);
-
-  box.setAttribute("id", "div-"+otherMail);
-  box.style.border = "2px solid black";
-  box.style.width = "50%";
-  box.style.height = "200px";
-
-  const chatField = document.createElement("input");
-  chatField.setAttribute("id", "chatField");
-  chatField.type = "text";
-
-  const chatContent = document.createElement("div");
-  box.appendChild(chatContent);
-  chatContent.setAttribute("id", otherMail+"-chatContent");
-
-  const button = document.createElement("button");
-  button.textContent = "Envoyer";
-  button.onclick = function() {
-    const message = document.getElementById("chatField").value;
-
-    var data = {
-      "type":"message",
-      "senderMail":selfMail,
-      "receiverMail":otherMail,
-      "message":message
-    }
-    data = JSON.stringify(data);
-    socket.send(data);
-
-    addMessage(selfMail, message);
-  }
-  box.appendChild(chatField);
-  box.appendChild(button);
-
-  chat.appendChild(box);
-}
-
-function askChat(mail1, mail2) {
-  const data = {
-    "type":"ask-chat",
-    "askerMail" : mail1,
-    "askedMail" : mail2
-  }
-
-  console.log(data);
-  const jsonData = JSON.stringify(data);
-  console.log(jsonData);
-  socket.send(jsonData);
-}
-
-async function displayUser() {
-
-  const mail1 = await getCurrentMail();
-  console.log("current mail : "+mail1);
-  const mail2 = document.getElementById("searchText").value+"@etu.umontpellier.fr";
-
-  res = await getServer("http://localhost:3000/users/search/mail/"+mail2);
-
-  if(res != undefined) {
-    res = await res.json();
-    res = res[0];
-
-    document.getElementById("searchRes").textContent = "Resultat :";
-    document.getElementById("searchRes").style.color = "black";
-    document.getElementById("searchRes").style.fontWeight = "bold";
-
-    const box = document.createElement("div");
-    box.style.border = "1px solid black";
-
-    const mail = document.createElement("div");
-    const name = document.createElement("div");
-    const lastname = document.createElement("div");
-
-    mail.textContent = "Mail : "+res.mail;
-    name.textContent = "Prenom : "+res.name;
-    lastname.textContent = "Nom de famille : "+res.lastname;
-
-    const button = document.createElement("button");
-    button.textContent = "Contacter";
-    button.addEventListener("click", async function() {
-      askChat(mail1, mail2);
-    });
-
-    box.appendChild(mail);
-    box.appendChild(name);
-    box.appendChild(lastname);
-    box.appendChild(button);
-
-    document.getElementById("foundUser").appendChild(box);
-  
-  } else {
-    document.getElementById("searchRes").style.color = "red";
-    document.getElementById("searchRes").style.fontWeight = "bold";
-    document.getElementById("searchRes").textContent = "Aucun resultat";
-  }
-}
-
-
+/*
+  Permet d'envoyer des requetes au serveur de facon simplifié
+*/
 async function getServer(url) {
   try {
     const response = await fetch(url);
@@ -530,76 +1032,13 @@ async function getServer(url) {
   }
 }
 
+/*
+  Permet de créer un cookie
+*/
 function createCookie(name, field, time) { // time in minute
   var e = null;
   var date = new Date ();
   date.setTime (date.getTime() + (time * 60 * 1000));
   e = "; expires=" + date.toGMTString();
   document.cookie = name + "=" + field + e + "; path=/";
-}
-
-async function signupSubmit() {
-    const name = document.getElementById("name").value.toLowerCase();
-    const lastname = document.getElementById("lastname").value.toLowerCase();
-    const mail = document.getElementById("mail").value.toLowerCase();
-    const password = document.getElementById("password").value;
-    const passwordConfirmation = document.getElementById("passwordConfirmation").value;
-
-    let emailPattern = /^[a-zA-Z0-9._%+-]+@etu.umontpellier\.fr$/;
-
-  if (emailPattern.test(mail)) {
-    console.log("L'adresse e-mail est valide.");
-  } else {
-    console.log("L'adresse e-mail n'est pas valide.");
-    document.getElementById("resText").style.color = "red";
-    document.getElementById("resText").style.fontWeight = "bold";
-    document.getElementById("resText").textContent = "Mail incorrect, utilisez un mail univ Montpellier";
-    return;
-  }
-
-    if(password != passwordConfirmation) {
-      document.getElementById("resText").style.color = "red";
-      document.getElementById("resText").style.fontWeight = "bold";
-      document.getElementById("resText").textContent = "Les mots de passe ne correspondent pas";
-      return;
-    }
-
-const hashedPassword = await hashPassword(password);
-const user = new User(name, lastname, mail, hashedPassword);
-  
-const requestOptions = {
-  method: 'POST', // Méthode de la requête
-  headers: {
-    'Content-Type': 'application/json' // Type de contenu du corps de la requête (JSON)
-  },
-  body: JSON.stringify(user) // Corps de la requête, converti en JSON
-};
-  
-fetch('http://localhost:3000/signup', requestOptions)
-    .then(response => {
-      if(response.status == 400) {
-        document.getElementById("resText").style.color = "red";
-        document.getElementById("resText").style.fontWeight = "bold";
-        document.getElementById("resText").textContent = "Cet email est deja utilisé";
-        console.log("Cet email est deja utilisé");
-        return undefined;
-  
-      } else if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-      console.log(data.message);
-
-      document.getElementById("resText").style.color = "green";
-      document.getElementById("resText").style.fontWeight = "bold";
-      document.getElementById("resText").textContent = "Inscription réussie";
-      window.location.href = "index.html";
-      createCookie("userId", data.userId, 30);
-      
-    }) 
-    .catch(error => {
-        console.error('There has been a problem with your fetch operation:', error);
-    });
 }
