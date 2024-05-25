@@ -500,7 +500,248 @@ fetch('http://localhost:3000/signup', requestOptions)
   });
 }
 
+function showNotification(message) {
+  const container = document.getElementById('notification-container');
+  
+  const notification = document.createElement('div');
+  notification.setAttribute("class","nes-container notification");
+  notification.style.display = "flex";
+  notification.style.flexDirection = "column";
+  notification.style.justifyItems = "center";
+
+  const text = document.createElement("div");
+  text.textContent = message;
+  text.style.margin = "10px";
+
+  const button = document.createElement("button");
+  button.setAttribute("class", "nes-btn is-primary");
+  button.textContent = "Go to";
+
+  notification.appendChild(text);
+  notification.appendChild(button);
+  container.appendChild(notification);
+
+  setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+      notification.remove();
+      }, 500); // Correspond à la durée de l'animation de disparition
+  }, 3000); // La notification disparaît après 3 secondes
+}
+
 // ------------------------- chat -----------------------------
+
+async function friendsButton() {
+  // Affichage des bulles
+  const titleDiv = document.getElementById("friends");
+  const title = titleDiv.querySelector(".title");
+  title.textContent = "Amis";
+
+  document.getElementById("friendContent").innerHTML = "";
+
+  const friendsButton = document.getElementById("friendsButton");
+  const requestsButton = document.getElementById("requestsButton");
+  const searchButton = document.getElementById("searchButton");
+
+  friendsButton.className = "nes-btn is-disabled button-test";
+  requestsButton.className = "nes-btn button-test";
+  searchButton.className = "nes-btn button-test";
+
+  // Affichage liste d'amis
+  const userId = getCookie("userId");
+
+  const postData = {
+    "userId":userId
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend/get';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Récuperation liste amis réussie");
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      console.log(data);
+      const selfMail = await getCurrentMail();
+      displayFriend(selfMail, data);
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+}
+
+async function displayFriend(selfMail, friendTab) {
+  const foundUser = document.getElementById("friendContent");
+
+  for(let i = 0; i < friendTab.length; i++) {
+    const data = friendTab[i];
+    var otherMail;
+
+    if(data.mail1 == selfMail) {
+      otherMail = data.mail2;
+    } else if (data.mail2 == selfMail) {
+      otherMail = data.mail1;
+    } else {
+      console.log("Problemes mails");
+      return;
+    }
+    console.log(otherMail);
+
+    var request = await getServer("http://localhost:3000/users/search/mail/"+otherMail);
+    request = (await(request).json());
+    var avatarName;
+    if(request != undefined && request.length == 1) {
+      request = request[0];
+      avatarName = request.avatar;
+    } else {
+      console.log("Probleme mail");
+      return;
+    }
+
+    const box = document.createElement("section");
+    box.setAttribute("class", "nes-container is-rounded with-title");
+    box.style.padding = "5px";
+    box.style.marginLeft = "4px";
+    box.style.marginRight = "4px";
+
+    box.style.marginBottom = "20px";
+    box.style.marginTop = "25px";
+
+    const titleDiv = document.createElement("a");
+    titleDiv.setAttribute("class","nes-badge title");
+    titleDiv.style.transform = "scale(0.7)";
+
+    const title = document.createElement("span");
+    title.textContent = capitalizeFirstLetter(request.name) + " " + capitalizeFirstLetter(request.lastname);
+    title.style.fontSize = "75%";
+    title.style.width = "auto";
+    title.style.height = "auto";
+    title.style.margin = "5px;"
+
+    var status;
+    // On recupere l'état de connexion de l'utilisateur concerné
+    await isConnectedToWebsocket()
+    .then(async () => {
+        // WebSocket est connecté, exécuter votre fonction
+        status = await getStatus(otherMail);
+      })
+    .catch((error) => {
+        console.error('Erreur de connexion WebSocket :', error);
+    });
+
+    if(status) {
+      title.setAttribute("class","is-success");
+
+    } else {
+      title.setAttribute("class","is-error");
+    }
+
+    titleDiv.appendChild(title);
+    box.appendChild(titleDiv);
+
+      const contentBox = document.createElement("div");
+      contentBox.style.display = "flex";
+      contentBox.setAttribute("id", "contentBox-"+otherMail);
+
+        const avatar = document.createElement("i");
+        avatar.setAttribute("class", "nes-"+avatarName);
+        avatar.style.transform = "scale(0.6)";
+        avatar.style.width = "70px"; // Ajuster à la taille désirée
+        avatar.style.height = "50px"; // Ajuster à la taille désirée
+        avatar.style.top = "-20px"; // Ajuster à la taille désirée
+        avatar.style.left = "-5px"; // Ajuster à la taille désirée
+
+        const contactButton = document.createElement("button");
+        contactButton.textContent = "Message";
+        contactButton.className = "nes-btn is-warning contactButton";
+        contactButton.setAttribute("data-selfmail", selfMail);
+        contactButton.setAttribute("data-othermail", otherMail);
+        contactButton.style.transform = "scale(0.55)";
+        contactButton.style.top = "-5px";
+        contactButton.style.left = "50px";
+        // contactButton.style.height = "60px";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Supprimer";
+        deleteButton.className = "nes-btn is-error";
+        deleteButton.style.transform = "scale(0.55)";
+        deleteButton.style.top = "-5px";
+        deleteButton.style.left = "-5px";
+
+      contentBox.appendChild(avatar);
+      contentBox.appendChild(contactButton);
+      contentBox.appendChild(deleteButton);
+
+
+    box.appendChild(contentBox);
+    foundUser.appendChild(box);
+  }
+  const buttons = document.querySelectorAll('.contactButton');
+
+  // Attachez un gestionnaire d'événements à chaque bouton
+  buttons.forEach(button => {
+      button.addEventListener('click', function(event) {
+          // Récupérez des informations sur le bouton cliqué à partir de l'événement
+          const selfMail = this.dataset.selfmail;
+          const otherMail = this.dataset.othermail;
+          
+          // Appelez la fonction avec les informations spécifiques
+          newChat(selfMail, otherMail);
+      });
+  });
+}
+
+function requestsButton() {
+  const titleDiv = document.getElementById("friends");
+  const title = titleDiv.querySelector(".title");
+  title.textContent = "Demandes";
+
+  document.getElementById("friendContent").innerHTML = "";
+
+  const friendsButton = document.getElementById("friendsButton");
+  const requestsButton = document.getElementById("requestsButton");
+  const searchButton = document.getElementById("searchButton");
+
+  friendsButton.className = "nes-btn button-test";
+  requestsButton.className = "nes-btn is-disabled button-test";
+  searchButton.className = "nes-btn button-test";
+}
+
+function searchButton() {
+  const titleDiv = document.getElementById("friends");
+  const title = titleDiv.querySelector(".title");
+  title.textContent = "Recherche";
+
+  document.getElementById("friendContent").innerHTML = "";
+
+  const friendsButton = document.getElementById("friendsButton");
+  const requestsButton = document.getElementById("requestsButton");
+  const searchButton = document.getElementById("searchButton");
+
+  friendsButton.className = "nes-btn button-test";
+  requestsButton.className = "nes-btn button-test";
+  searchButton.className = "nes-btn is-disabled button-test";
+}
 
 /*
   Permet d'ajouter un message a une conversation
@@ -510,8 +751,9 @@ async function addMessage(mail, message, self) {
   // mail : mail de la la personne qui a envoyé le message
 
   // On récupère dans un premier temps le container correspondant a notre mail, ensuite le div correspondant aux messages
-  const chatContainer = document.getElementById(mail);
+  const chatContainer = document.getElementById("chat-"+mail);
   const chat = chatContainer.querySelector(".message-list");
+
 
   // Container du message, permet d'afficher le message correctement a droite ou a gauche
   const msgContainer = document.createElement("section");
@@ -545,12 +787,22 @@ async function addMessage(mail, message, self) {
 
       // Partie emoji
       if(message[0] == "/") {
+        msgDiv.style.width = "120px";
+        msgDiv.style.height = "120px";
 
         const emojiDiv = document.createElement("section");
-        emojiDiv.setAttribute("class", "nes-icon is-medium");
+        emojiDiv.setAttribute("class", "nes-icon is-small");
+        emojiDiv.style.position = "absolute";
+        emojiDiv.style.top = "0px";
+        emojiDiv.style.left = "0px";
+        emojiDiv.style.width = "0px";
+        emojiDiv.style.height = "0px";
 
         const emoji = document.createElement("i");
         emoji.setAttribute("class", "nes-"+message.slice(1));
+        emoji.style.position = "absolute";
+        emoji.style.top = "-4px";
+        emoji.style.left = "-4px";
 
         emojiDiv.appendChild(emoji);
         msgDiv.appendChild(emojiDiv);
@@ -630,6 +882,9 @@ fetch(url, requestOptions)
   On renseigne le mail du destinataire et son propre mail
 */
 async function newChat(selfMail, otherMail) {
+  console.log("selfMail : "+selfMail);
+  console.log("otherMail : "+otherMail);
+
 
   const postData = {
     "mail1" : selfMail,
@@ -668,12 +923,19 @@ async function newChat(selfMail, otherMail) {
   if(!document.getElementById(otherMail)) {
   
     const chat = document.getElementById("chat");
+    const fieldContainer = document.getElementById("field-container");
+
+    fieldContainer.innerHTML = ""
+    chat.innerHTML = "";
 
     // Container du chat message
     const container = document.createElement("section");
     container.setAttribute("class", "nes-container with-title");
-    container.setAttribute("id",otherMail);
-    container.style.margin = "50px";
+    container.setAttribute("id","chat-"+otherMail);
+    container.style.margin = "5px";
+    container.style.height = "100%";
+    container.style.width = "98%";
+    container.style.padding = "5px";
     
     // Titre du container (le destinataire des messages)
     const title = document.createElement("p");
@@ -684,11 +946,15 @@ async function newChat(selfMail, otherMail) {
     // Partie message, la ou tout les messages vont se stocker
     const msglist = document.createElement("section");
     msglist.setAttribute("class", "message-list");
+    msglist.style.height = "100%";
+    msglist.style.width = "100%";
     container.appendChild(msglist);
 
     const inputContainer = document.createElement("span");
     inputContainer.style.display = "flex";
     inputContainer.style.gap = "10px";
+    inputContainer.style.margin = "15px";
+    inputContainer.setAttribute("id","field-"+otherMail);
 
     // Div pour englober l'input pour ecrire des messages
     const chatDiv = document.createElement("div");
@@ -713,8 +979,7 @@ async function newChat(selfMail, otherMail) {
       }
     });
 
-    chatDiv.append(chatField);
-    inputContainer.appendChild(chatDiv);
+    inputContainer.append(chatField);
 
     const button = document.createElement("button");
     button.textContent = "Envoyer";
@@ -723,7 +988,7 @@ async function newChat(selfMail, otherMail) {
     button.onclick = sendMessage(selfMail, otherMail);
     inputContainer.appendChild(button);
 
-    container.appendChild(inputContainer);
+    fieldContainer.appendChild(inputContainer);
 
     chat.appendChild(container);
     loadMessages(selfMail, otherMail);
@@ -731,7 +996,7 @@ async function newChat(selfMail, otherMail) {
 }
 
 function scrollToBottom(mail) {
-  const chatContainer = document.getElementById(mail);
+  const chatContainer = document.getElementById("chat-"+mail);
   const chat = chatContainer.querySelector(".message-list");
 
   chat.scrollTop += 500;
@@ -741,7 +1006,7 @@ async function sendMessage(selfMail, otherMail) {
   var message;
 
   try {
-    message = document.getElementById(otherMail).getElementsByClassName("chatField")[0].value;
+    message = document.getElementById("field-"+otherMail).getElementsByClassName("chatField")[0].value;
     console.log("message : "+message);
   } catch(error) {
     console.log(error);
@@ -859,7 +1124,7 @@ async function displayUser() {
 
     // Bouton pour contacter la personne
     const button = document.createElement("button");
-    button.textContent = "Contacter";
+    button.textContent = "Message";
     button.addEventListener("click", async function() {
       askChat(mail1, mail2);
     });
@@ -868,7 +1133,6 @@ async function displayUser() {
     const statusSpan = document.createElement("span");
 
     // On recupere l'état de connexion de l'utilisateur concerné
-    console.log("tentative status");
     const status = await getStatus(mail2);
 
     if(status) {
@@ -895,6 +1159,25 @@ async function displayUser() {
     document.getElementById("searchRes").textContent = "Utilisateur inexistant";
     document.getElementById("searchRes").className = "nes-text is-error";
   }
+}
+
+function isConnectedToWebsocket() {
+  return new Promise((resolve, reject) => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+          // Si déjà connecté, résoudre immédiatement la promesse
+          resolve();
+      } else if(socket) {
+          // Sinon, attendre que la connexion soit établie
+          socket.addEventListener('open', () => {
+              resolve();
+          });
+
+          // Gérer les erreurs de connexion
+          socket.addEventListener('error', (error) => {
+              reject(error);
+          });
+      }
+  });
 }
 
 function getStatus(mail, callback) {
@@ -972,6 +1255,7 @@ async function getCurrentMail() {
   Permet de se connecter au serveur websocket
   Transmet son mail afin d'etre identifié
 */
+
 async function connectToWebsocket() {
 
   const mailUser = await getCurrentMail();
@@ -981,16 +1265,22 @@ async function connectToWebsocket() {
 
   socket.addEventListener('open', function (event) {
     console.log('Connecté au serveur WebSocket');
+    return socket && socket.readyState === WebSocket.OPEN;
   });
 
-  socket.addEventListener('message', function (event) {
+  socket.addEventListener('message', async function (event) {
       var data = event.data;
       console.log("data : "+data);
       data = JSON.parse(data);
       switch (data.type) {
         case "message":
           console.log(data.content);
-          addMessage(data.mail, data.message, false)
+          addMessage(data.mail, data.message, false);
+          var userData = await getServer("http://localhost:3000/users/search/mail/"+data.mail);
+          userData = await userData.json();
+          userData = await userData[0];
+          console.log(userData);
+          showNotification(capitalizeFirstLetter(await userData.name)+" "+capitalizeFirstLetter(await userData.lastname)+" vous a envoyé un message");
           break;
         case "chat-accept":
           console.log("chat-accept");
