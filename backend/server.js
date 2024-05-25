@@ -93,6 +93,11 @@ app.post("/friend-request/add", async(req, res) => {
   const userId = data.userId; // sender userId
   // On doit vérifier que notre userId correspond a celui du sender
 
+  if(sender == receiver) {
+    res.status(400).send("Impossible de se comprendre");
+    return;
+  }
+
   var request = await usersCollection.find({"userId":userId}).toArray();
 
   if(request != undefined && request.length != 0) {
@@ -173,6 +178,7 @@ app.post("/friend-request/accept", async(req,res) => {
               }
 
               insertdb(friendCollection, data);
+              friendrequestCollection.deleteOne({"sender":sender, "receiver":receiver});
               res.status(200).send("Les deux clients sont maintenant amis");
             } else {
               res.status(400).send("Les deux clients sont deja amis");
@@ -195,7 +201,103 @@ app.post("/friend-request/accept", async(req,res) => {
   }
 });
 
-app.post("/friend/get", async(req,res) => {
+app.post("/friend-request/deny", async(req,res) => {
+  // body : userID et mail sender
+  const data = req.body;
+  const sender = data.sender;
+  var receiver;
+  const userId = data.userId; // userId du receiver
+  // On doit vérifier que l'userId donné correspond a la personne qui a le droit d'accepter la requete
+  //    c'est a dire qu'on doit chercher une requete contenant un sender et un receiver correspondant
+
+  var request = await usersCollection.find({"userId":userId}).toArray();
+
+  if(request != undefined && request.length != 0) {
+    if(request.length == 1) {
+      request = request[0];
+      receiver = request.mail;
+      console.log(receiver);
+      console.log(sender);
+
+      request = await friendrequestCollection.find({"sender":sender, "receiver":receiver}).toArray();
+
+      if(request != undefined && request.length != 0) {
+        if(request.length == 1) {
+          request = request[0];
+          if(request.status == "pending") {
+            // Si on est ici, alors l'userId correpond bien a qlq et il existe bien une friend-request correspondante
+            friendrequestCollection.updateOne({"sender": sender, "receiver": receiver}, {$set: {"status": "rejected"}});          
+            friendrequestCollection.deleteOne({"sender":sender, "receiver":receiver});
+
+            res.status(200).send("Rejet confirmé");
+          } else {
+            res.status(300).send("La demande n'est pas en attente d'acceptation");
+          }
+        } else {
+          res.status(400).send("Plusieurs demande d'ami correspondante");
+        }
+      } else {
+        res.status(400).send("Aucune demande d'ami correspondante");
+      }
+
+    } else {
+      res.status(400).send("Plusieurs users avec le meme userId");
+    }
+  } else {
+    res.status(400).send("L'userId n'est pas correct");
+  }
+});
+
+// Permet de connaitre la relation entre deux clients
+app.post("/friend/get-status", async(req, res) => {
+  const data = req.body;
+  const userId = data.userId;
+  const otherMail = data.otherMail;
+  var selfMail;
+
+  var request = usersCollection.find({"userId":userId}).toArray();
+
+  if((await request) && (await request).length != 0) {
+    if((await request).length == 1) {
+      console.log((await request)[0]);
+      selfMail = (await request)[0].mail;
+    } else {
+      res.status(400).send("Plusieurs userId identiques");
+      return;
+    }
+  } else {
+    res.status(400).send("UserId incorrect");
+    return;
+  }
+
+  if(otherMail == selfMail) {
+    res.status(200).json({"status":"self"});
+    return;
+  }
+
+  // On commence par chercher dans friend
+  request = friendrequestCollection.find({$or:[{"sender":selfMail, "receiver":otherMail},{"sender":otherMail, "receiver":selfMail}]}).toArray();
+
+  if((await request) && (await request).length != 0) {
+    if((await request)[0].status == "pending") {
+      res.status(200).json({"status":"pending"});
+    } else {
+      res.status(400).send("Friend request existante mais pas en pending");
+    }
+
+  } else {
+    // Si il n'y a rien dans friend request on cherche dans friend
+    request = friendCollection.find({$or:[{"mail1":selfMail, "mail2":otherMail},{"mail1":otherMail, "mail2":selfMail}]}).toArray();
+    
+    if((await request) && (await request).length != 0) {
+      res.status(200).send({"status":"accepted"});
+    } else {
+      res.status(200).send({"status":"none"});
+    }
+  }
+}); 
+
+app.post("/friend-request/get", async(req, res) => {
   const data = req.body;
   const userId = data.userId;
 
@@ -204,9 +306,9 @@ app.post("/friend/get", async(req,res) => {
     if(request.length == 1) {
       request = request[0];
       const mail = request.mail;
-      console.log("Demande liste amis de "+mail);
+      console.log("Demande liste demande amis de "+mail);
 
-      request = await friendCollection.find({$or: [{ "mail1": mail },{ "mail2": mail }]}).toArray();
+      request = await friendrequestCollection.find({ "receiver": mail }).toArray();
       res.status(200).json(request);
     } else {
       res.status(400).send("Plusieurs UserId correspondant");
@@ -260,11 +362,37 @@ app.post("/friend-request/deny", async(req,res) => {
   }
 });
 
+app.post("/friend/get", async(req,res) => {
+  const data = req.body;
+  const userId = data.userId;
+
+  var request = await usersCollection.find({"userId":userId}).toArray();
+  if(request != undefined && request.length != 0) {
+    if(request.length == 1) {
+      request = request[0];
+      const mail = request.mail;
+      console.log("Demande liste amis de "+mail);
+
+      request = await friendCollection.find({$or:[{ "mail1": mail },{ "mail2": mail }]}).toArray();
+      res.status(200).json(request);
+    } else {
+      res.status(400).send("Plusieurs UserId correspondant");
+    }
+  } else {
+    res.status(400).send("UserId incorrect");
+  }
+});
+
 app.post("/friend/add", async(req,res) => {
   const data = req.body;
   const mail1 = data.mail1;
   const mail2 = data.mail2;
   const userId = data.userId;
+
+  if(mail1 == mail2) {
+    res.status(400).send("Impossible de se comprendre");
+    return;
+  }
 
   var request = await usersCollection.find({"userId":userId}).toArray();
 
@@ -334,8 +462,8 @@ app.post("/friend/delete", async(req,res) => {
       request = request[0];
       const selfMail = request.mail;
     
-      request1 = friendCollection.find({"mail1":selfMail, "mail2":otherMail}).toArray();
-      request2 = friendCollection.find({"mail1":otherMail, "mail2":selfMail}).toArray();
+      var request1 = friendCollection.find({"mail1":selfMail, "mail2":otherMail}).toArray();
+      var request2 = friendCollection.find({"mail1":otherMail, "mail2":selfMail}).toArray();
 
       if((await request1).length == 1 && (await request2).length == 0) {
         request = (await request1)[0];

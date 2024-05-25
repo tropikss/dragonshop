@@ -593,6 +593,15 @@ fetch(url, requestOptions)
 async function displayFriend(selfMail, friendTab) {
   const foundUser = document.getElementById("friendContent");
 
+  if(friendTab.length == 0) {
+    const none = document.createElement("span");
+    none.setAttribute("class","nes-text is-disabled");
+    none.textContent = "Aucun ami";
+    none.style.fontSize = "85%";
+
+    foundUser.appendChild(none);
+  }
+
   for(let i = 0; i < friendTab.length; i++) {
     const data = friendTab[i];
     var otherMail;
@@ -671,32 +680,33 @@ async function displayFriend(selfMail, friendTab) {
         avatar.style.top = "-20px"; // Ajuster à la taille désirée
         avatar.style.left = "-5px"; // Ajuster à la taille désirée
 
-        const contactButton = document.createElement("button");
-        contactButton.textContent = "Message";
-        contactButton.className = "nes-btn is-warning contactButton";
-        contactButton.setAttribute("data-selfmail", selfMail);
-        contactButton.setAttribute("data-othermail", otherMail);
-        contactButton.style.transform = "scale(0.55)";
-        contactButton.style.top = "-5px";
-        contactButton.style.left = "50px";
-        // contactButton.style.height = "60px";
+        const messageButton = document.createElement("button");
+        messageButton.textContent = "Message";
+        messageButton.className = "nes-btn is-warning messageButton";
+        messageButton.setAttribute("data-selfmail", selfMail);
+        messageButton.setAttribute("data-othermail", otherMail);
+        messageButton.style.transform = "scale(0.55)";
+        messageButton.style.top = "-5px";
+        messageButton.style.left = "50px";
+        // messageButton.style.height = "60px";
 
         const deleteButton = document.createElement("button");
         deleteButton.textContent = "Supprimer";
-        deleteButton.className = "nes-btn is-error";
+        deleteButton.className = "nes-btn is-error deleteButton";
+        deleteButton.setAttribute("data-othermail", otherMail);
         deleteButton.style.transform = "scale(0.55)";
         deleteButton.style.top = "-5px";
         deleteButton.style.left = "-5px";
 
       contentBox.appendChild(avatar);
-      contentBox.appendChild(contactButton);
+      contentBox.appendChild(messageButton);
       contentBox.appendChild(deleteButton);
 
 
     box.appendChild(contentBox);
     foundUser.appendChild(box);
   }
-  const buttons = document.querySelectorAll('.contactButton');
+  var buttons = document.querySelectorAll('.messageButton');
 
   // Attachez un gestionnaire d'événements à chaque bouton
   buttons.forEach(button => {
@@ -709,6 +719,57 @@ async function displayFriend(selfMail, friendTab) {
           newChat(selfMail, otherMail);
       });
   });
+
+  buttons = document.querySelectorAll('.deleteButton');
+
+  // Attachez un gestionnaire d'événements à chaque bouton
+  buttons.forEach(button => {
+      button.addEventListener('click', function(event) {
+          const otherMail = this.dataset.othermail;
+          
+          // Appelez la fonction avec les informations spécifiques
+          deleteFriend(otherMail);
+      });
+  });
+}
+
+function deleteFriend(otherMail) {
+  const userId = getCookie("userId");
+
+  const postData = {
+    "userId":userId,
+    "otherMail":otherMail
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend/delete';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Delete ami réussie");
+            friendsButton();
+            return;
+        } else {
+          return response.text().then(text => { throw new Error(text) });
+        }
+      })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
 }
 
 function requestsButton() {
@@ -725,6 +786,243 @@ function requestsButton() {
   friendsButton.className = "nes-btn button-test";
   requestsButton.className = "nes-btn is-disabled button-test";
   searchButton.className = "nes-btn button-test";
+
+  const userId = getCookie("userId");
+  const postData = {
+    "userId":userId
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend-request/get';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Récuperation liste demandes ami réussie");
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      console.log(data);
+      const selfMail = await getCurrentMail();
+      displayFriendRequest(selfMail, data);
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+}
+
+async function displayFriendRequest(selfMail, friendRequestTab) {
+  const foundUser = document.getElementById("friendContent");
+
+  if(friendRequestTab.length == 0) {
+    const none = document.createElement("span");
+    none.setAttribute("class","nes-text is-disabled");
+    none.textContent = "Aucune demande d'ami";
+    none.style.fontSize = "85%";
+
+    foundUser.appendChild(none);
+  }
+
+  for(let i = 0; i < friendRequestTab.length; i++) {
+    const data = friendRequestTab[i];
+
+    // On ne recoit que les demandes qui nous correspondent, et dont on est le receiver, donc sender est l'autre mail
+    var otherMail = data.sender;
+
+    console.log(otherMail);
+
+    var request = await getServer("http://localhost:3000/users/search/mail/"+otherMail);
+    request = (await(request).json());
+    var avatarName;
+    if(request != undefined && request.length == 1) {
+      request = request[0];
+      avatarName = request.avatar;
+    } else {
+      console.log("Probleme mail");
+      return;
+    }
+
+    const box = document.createElement("section");
+    box.setAttribute("class", "nes-container is-rounded with-title");
+    box.style.padding = "5px";
+    box.style.marginLeft = "4px";
+    box.style.marginRight = "4px";
+
+    box.style.marginBottom = "20px";
+    box.style.marginTop = "25px";
+
+    const titleDiv = document.createElement("a");
+    titleDiv.setAttribute("class","nes-badge title");
+    titleDiv.style.transform = "scale(0.7)";
+
+    const title = document.createElement("span");
+    title.textContent = capitalizeFirstLetter(request.name) + " " + capitalizeFirstLetter(request.lastname);
+    title.style.fontSize = "75%";
+    title.style.width = "auto";
+    title.style.height = "auto";
+    title.style.margin = "5px;"
+
+    title.setAttribute("class","is-warning");
+
+    titleDiv.appendChild(title);
+    box.appendChild(titleDiv);
+
+      const contentBox = document.createElement("div");
+      contentBox.style.display = "flex";
+      contentBox.setAttribute("id", "contentBox-"+otherMail);
+
+        const avatar = document.createElement("i");
+        avatar.setAttribute("class", "nes-"+avatarName);
+        avatar.style.transform = "scale(0.6)";
+        avatar.style.width = "70px"; // Ajuster à la taille désirée
+        avatar.style.height = "50px"; // Ajuster à la taille désirée
+        avatar.style.top = "-20px"; // Ajuster à la taille désirée
+        avatar.style.left = "-5px"; // Ajuster à la taille désirée
+
+        const acceptButton = document.createElement("button");
+        acceptButton.textContent = "Accepter";
+        acceptButton.className = "nes-btn is-success acceptButton";
+        acceptButton.setAttribute("data-othermail", otherMail);
+        acceptButton.style.transform = "scale(0.55)";
+        acceptButton.style.top = "-5px";
+        acceptButton.style.left = "50px";
+        // acceptButton.style.height = "60px";
+
+        const denyButton = document.createElement("button");
+        denyButton.textContent = "Refuser";
+        denyButton.className = "nes-btn is-error denyButton";
+        denyButton.setAttribute("data-othermail", otherMail);
+        denyButton.style.transform = "scale(0.55)";
+        denyButton.style.top = "-5px";
+        denyButton.style.left = "-5px";
+
+      contentBox.appendChild(avatar);
+      contentBox.appendChild(acceptButton);
+      contentBox.appendChild(denyButton);
+
+
+    box.appendChild(contentBox);
+    foundUser.appendChild(box);
+  }
+  var buttons = document.querySelectorAll('.acceptButton');
+
+  // Attachez un gestionnaire d'événements à chaque bouton
+  buttons.forEach(button => {
+      button.addEventListener('click', function(event) {
+          // Récupérez des informations sur le bouton cliqué à partir de l'événement
+          const otherMail = this.dataset.othermail;
+          
+          // Appelez la fonction avec les informations spécifiques
+          acceptFriend(otherMail);
+      });
+  });
+
+  buttons = document.querySelectorAll('.denyButton');
+
+  // Attachez un gestionnaire d'événements à chaque bouton
+  buttons.forEach(button => {
+      button.addEventListener('click', function(event) {
+          const otherMail = this.dataset.othermail;
+          
+          // Appelez la fonction avec les informations spécifiques
+          denyFriend(otherMail);
+      });
+  });
+}
+
+function acceptFriend(otherMail) {
+  const userId = getCookie("userId");
+
+  const postData = {
+    "userId":userId,
+    "sender":otherMail
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend-request/accept';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Acceptation ami réussie");
+            requestsButton();
+            return;
+        } else {
+          return response.text().then(text => { throw new Error(text) });
+        }
+      })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
+}
+
+function denyFriend(otherMail) {
+  const userId = getCookie("userId");
+
+  const postData = {
+    "userId":userId,
+    "sender":otherMail
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend-request/deny';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Rejet ami réussie");
+            requestsButton();
+            return;
+        } else {
+          return response.text().then(text => { throw new Error(text) });
+        }
+      })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
 }
 
 function searchButton() {
@@ -741,6 +1039,54 @@ function searchButton() {
   friendsButton.className = "nes-btn button-test";
   requestsButton.className = "nes-btn button-test";
   searchButton.className = "nes-btn is-disabled button-test";
+
+  const friendContent = document.getElementById("friendContent");
+  friendContent.style.display = "flex";
+  friendContent.style.flexDirection = "column";
+
+    const searchBar = document.createElement("section");
+    searchBar.style.height = "13%";
+    searchBar.style.width = "100%";
+    searchBar.style.display = "flex";
+    searchBar.flexDirection = "row";
+
+      const searchDiv = document.createElement("div");
+      searchDiv.className = "nes-field";
+      searchDiv.style.width = "100%";
+      searchDiv.style.height = "100%";
+
+        const searchField = document.createElement("input");
+        searchField.className = "nes-input";
+        searchField.setAttribute("id", "searchText");
+        searchField.setAttribute("placeholder", "alois.drucke");
+        searchField.style.transform = "scale(0.65)";
+        searchField.style.position = "absolute";
+        searchField.style.left = "-50px";
+
+
+      searchDiv.append(searchField);
+
+      const fieldSearchButton = document.createElement("button");
+      fieldSearchButton.style.transform = "scale(0.6)";
+      fieldSearchButton.textContent = "Chercher";
+      fieldSearchButton.style.height = "53px";    
+      fieldSearchButton.style.top = "1px";
+      fieldSearchButton.style.left = "25px";
+      fieldSearchButton.className = "nes-btn is-primary";
+      fieldSearchButton.addEventListener('click', function(event) {
+        displayUser();
+      });
+    
+    searchBar.appendChild(searchDiv);
+    searchBar.appendChild(fieldSearchButton);
+
+    const foundUser = document.createElement("section");
+    foundUser.setAttribute("id", "foundUser");
+    foundUser.style.height = "87%";
+    foundUser.style.width = "100%";
+
+  friendContent.appendChild(searchBar);
+  friendContent.appendChild(foundUser);
 }
 
 /*
@@ -1088,77 +1434,185 @@ async function displayUser() {
 
   const mail1 = await getCurrentMail();
   console.log("current mail : "+mail1);
-  const mail2 = document.getElementById("searchText").value+"@etu.umontpellier.fr";
+  const mail2 = document.getElementById("searchText").value.toLowerCase()+"@etu.umontpellier.fr";
 
   res = await getServer("http://localhost:3000/users/search/mail/"+mail2);
 
   if(res != undefined) {
     res = await res.json();
     res = res[0];
-    console.log(res.avatar);
 
-    // On raffraichi la page pour avertir que l'on a bien trouvé l'utilisateur
-    document.getElementById("searchRes").textContent = "Utilisateur trouvé !";
-    document.getElementById("searchRes").className = "nes-text is-success";
-
-    // Container de l'utilisateur trouvé
-    const box = document.createElement("div");
-    box.setAttribute("class","nes-container with-title");
-    box.style.width = "auto";
-    box.style.margin = "50px";
-
-    console.log(res);
-    console.log(res.avatar);
-    const avatar = document.createElement("i");
-    avatar.setAttribute("class","nes-"+res.avatar);
-
-    // Titre du container, on utilise une fonction (capitalize...) pour mettre en majuscule la premiere lettre
-    const title = document.createElement("p");
-    title.setAttribute("class", "title");
-    title.textContent = capitalizeFirstLetter(res.name) + " " + capitalizeFirstLetter(res.lastname);
-    box.appendChild(title); 
-
-    // Temoin d'état de connexion
-    const statusBox = document.createElement("a");
-    statusBox.setAttribute("class", "nes-badge");
-
-    // Bouton pour contacter la personne
     const button = document.createElement("button");
-    button.textContent = "Message";
+    button.setAttribute("id", "displayUserButton");
     button.addEventListener("click", async function() {
-      askChat(mail1, mail2);
+      askFriend(res.mail);
+      displayUser();
     });
 
-    // Span du badge
-    const statusSpan = document.createElement("span");
+    const userId = getCookie("userId");
 
-    // On recupere l'état de connexion de l'utilisateur concerné
-    const status = await getStatus(mail2);
-
-    if(status) {
-      statusSpan.setAttribute("class", "is-success");
-      statusSpan.textContent = "Connecté";
-      button.setAttribute("class", "nes-btn");
-      statusBox.appendChild(statusSpan);
-    } else {
-      statusSpan.setAttribute("class", "is-error");
-      statusSpan.textContent = "Déconnecté";
-      button.setAttribute("class", "nes-btn is-disabled");
-      statusBox.appendChild(statusSpan);
+    const postData = {
+      "otherMail":res.mail,
+      "userId":userId
     }
+  
+    // Options de la requête
+    const requestOptions = {
+      method: 'POST', // Méthode HTTP POST
+      headers: {
+          'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+      },
+      body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+  };
+  
+  // URL de l'endpoint de l'API
+  const url = 'http://localhost:3000/friend/get-status';
+  
+  // Effectuer la requête POST avec l'API Fetch
+  fetch(url, requestOptions)
+      .then(async response => {
+          // Vérifiez si la réponse est OK (status 200)
+          if (response.ok) {
+              console.log("Demande relation recu");
+              return response.json();
+          } else {
+            const text = await response.text();
+            throw new Error(text);
+          }
+        })
+      .then(async data => {
+        console.log(data);
+        if(data.status == "pending") {
+          button.textContent = "Demande en attente";
+          button.className = "nes-btn is-disabled";
 
-    box.appendChild(statusBox);
-    box.appendChild(document.createElement("br"));
+        } else if (data.status == "accepted") {
+          button.textContent = "Deja ami";
+          button.className = "nes-btn is-disabled";
+
+        } else if (data.status == "none") {
+          button.textContent = "Devenir ami";
+          button.className = "nes-btn is-primary";
+
+        }  else if (data.status == "self") {
+          button.textContent = "C'est toi !";
+          button.className = "nes-btn is-disabled";
+
+        } else {
+          console.log("Status relation incorrect");
+          button.textContent = "Erreur";
+          button.className = "nes-btn is-disabled";
+        }
+        return;
+      })
+      .catch(error => {
+          // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+          console.error('Erreur : ', error);
+      });
+
+    // Container de l'utilisateur trouvé
+    const box = document.createElement("section");
+    box.setAttribute("class", "nes-container is-rounded with-title");
+    box.style.padding = "5px";
+    box.style.marginLeft = "4px";
+    box.style.marginRight = "4px";
+    box.style.marginBottom = "20px";
+    box.style.marginTop = "25px";
+    box.style.display = "flex";
+    box.style.flexDirection = "column";
+
+      const titleDiv = document.createElement("a");
+      titleDiv.setAttribute("class","nes-badge title");
+      titleDiv.style.transform = "scale(0.9)";
+      titleDiv.margin = "15px";
+      titleDiv.marginBottom = "15px";
+      titleDiv.height = "100px";
+
+        const title = document.createElement("span");
+        title.textContent = capitalizeFirstLetter(res.name) + " " + capitalizeFirstLetter(res.lastname);
+        title.style.fontSize = "75%";
+        title.style.width = "auto";
+        title.style.height = "auto";
+        title.style.margin = "5px;"
+
+        const status = await getStatus(res.mail);
+
+        if(status) {
+          title.className = "is-success";
+        } else {
+          title.className = "is-error";
+        }
+
+      titleDiv.appendChild(title);
+
+    box.appendChild(titleDiv); 
+
+      const avatar = document.createElement("i");
+      avatar.setAttribute("class","nes-"+res.avatar);
+      avatar.style.transform = "scale(1)";
+      avatar.style.top = "-15px";
+      avatar.style.left = "80px";
+
     box.appendChild(avatar);
-    box.appendChild(document.createElement("br"));
+
     box.appendChild(button);
 
     document.getElementById("foundUser").appendChild(box);
   
   } else {
-    document.getElementById("searchRes").textContent = "Utilisateur inexistant";
-    document.getElementById("searchRes").className = "nes-text is-error";
+    const none = document.createElement("span");
+    none.textContent = "Utilisateur inexistant";
+    none.style.fontSize = "80%";
+    none.className = "nes-text is-error";
+
+    document.getElementById("foundUser").appendChild(none);
   }
+}
+
+async function askFriend(otherMail) {
+  const userId = getCookie("userId");
+  const selfMail = await getCurrentMail();
+
+  const postData = {
+    "sender":selfMail,
+    "receiver":otherMail,
+    "userId":userId
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/friend-request/add';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Demande ami envoyé");
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      console.log(data);
+      const selfMail = await getCurrentMail();
+      displayFriend(selfMail, data);
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
 }
 
 function isConnectedToWebsocket() {
