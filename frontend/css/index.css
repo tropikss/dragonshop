@@ -1,0 +1,51 @@
+html, body, section {
+	block-size: 100%;
+  }
+  
+  .section-1 {
+	background-image: url("../images/japon.gif"); /* Chemin vers votre image */
+    background-repeat: no-repeat; /* Pas de répétition de l'image */
+	image-rendering: pixelated; /* Rend l'image pixelisée */
+	filter: grayscale(1);
+	background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
+  }
+
+  .section-2 {
+	background-image: url("../images/falls.gif"); /* Chemin vers votre image */
+    background-repeat: no-repeat; /* Pas de répétition de l'image */
+	image-rendering: pixelated; /* Rend l'image pixelisée */
+	background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
+  }
+
+  .section-3 {
+	background-image: url("../images/city.gif"); /* Chemin vers votre image */
+    background-repeat: no-repeat; /* Pas de répétition de l'image */
+	image-rendering: pixelated; /* Rend l'image pixelisée */
+	background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
+  }
+
+  .section-4 {
+	background-image: url("../images/moon.gif"); /* Chemin vers votre image */
+    background-repeat: no-repeat; /* Pas de répétition de l'image */
+	image-rendering: pixelated; /* Rend l'image pixelisée */
+	background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
+  }
+
+  html {
+	scroll-snap-type: y mandatory;
+  }
+  
+  section {
+	scroll-snap-align: start;
+	scroll-snap-stop: always;
+	
+	display: flex;
+	align-items: center;
+	justify-content: center;
+  }	
+
+  body {
+	margin: 0;
+	font-family: system-ui, sans-serif;
+	font-size: 4rem;
+  }

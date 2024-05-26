@@ -1,49 +1,20 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScrollTop Example</title>
-    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
-   <style>
-    #notification-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 300px;
-        z-index: 1000;
-        }
+    <title>Déplacement au Scroll</title>
+    <style>
+        body {
+            background-image: url("./images/moon.gif"); /* Chemin vers votre image */
+            background-repeat: no-repeat; /* Pas de répétition de l'image */
+            background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
 
-        .notification {
-        background-color: #cecccc;
-        animation: slide-in 1s ease-in-out;
-        }
-
-        @keyframes slide-in {
-        from {
-            opacity: 0;
-            transform: translateX(100%);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-        }
-        @keyframes stutter {
-            0% { transform: translateX(0); }
-            20% { transform: translateX(10px); }
-            40% { transform: translateX(-10px); }
-            60% { transform: translateX(10px); }
-            80% { transform: translateX(-10px); }
-            100% { transform: translateX(0); }
-        }
-   </style>  
-
-   <script>
-    
-   </script>
+            /* background-position: center center; */        }
+    </style>
 </head>
+
 <body>
-    <button onclick="showNotification('This is a test notification')">Show Notification</button>
+    <img
 </body>
 </html>

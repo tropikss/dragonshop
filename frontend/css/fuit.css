@@ -1,0 +1,28 @@
+
+body {
+	background-image: url("../images/japon.gif"); /* Chemin vers votre image */
+  background-repeat: no-repeat; /* Pas de répétition de l'image */
+	image-rendering: pixelated; /* Rend l'image pixelisée */
+	background-size: 100vw 100vh; /* Étend l'image pour remplir complètement le conteneur, sans conserver les proportions */
+  overflow: hidden;
+}
+
+.fuyarde{
+    filter: brightness(1.05) contrast(1.1) drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.7)) drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.5)) drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.3));
+    position:relative;
+    height:200px;
+    width:300px;
+}
+
+.img {
+  height: 100%;
+  width: 100%;
+}
+
+.zone_survol {
+	height:200px;
+	width:300px;
+	display: inline-block;
+	position: relative;
+	transition: all 0.5s;
+}
