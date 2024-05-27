@@ -677,6 +677,7 @@ app.get("/users/search/:filter/:field", async (req, res) => {
   const filter = req.params.filter;
 
   if(filter != "userId" && filter != "mail" && filter != "name" && filter != "lastname") {
+    res.status(400).send("Filtre non autorisé");
     return;
   }
 

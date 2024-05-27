@@ -45,7 +45,7 @@ async function index() {
     console.log("userId : "+userId);
 
     // récupère les données de l'utilisateur en cours
-    var res = await getServer("backendURL/users/search/userId/"+userId);
+    var res = await getServer(backendURL+"/users/search/userId/"+userId);
 
     if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
@@ -125,7 +125,7 @@ async function admin() {
   // Verification si l'utilisateur est bien admin
   // /admin/userId permet de vérifier que l'userId indiqué est bien admin
   //    - 200 pour oui
-  var res = await getServer("backendURL/admin/"+userId);
+  var res = await getServer(backendURL+"/admin/"+userId);
   console.log(await res);
   res = await res.json();
   console.log(res);
