@@ -24,7 +24,7 @@ const { ObjectId } = require('mongodb');
 
 const websocket = require('./websocket'); // Importez votre fichier websocket.js
 
-const port = 3000;
+const port = 5000;
 
 // Middleware pour servir les fichiers statiques du frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
