@@ -22,7 +22,26 @@ const nodemailer = require('nodemailer');
 const { send } = require('process');
 const { ObjectId } = require('mongodb');
 
+const websocket = require('./websocket'); // Importez votre fichier websocket.js
+
 const port = 3000;
+
+// Middleware pour servir les fichiers statiques du frontend
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Route pour votre API backend
+app.get('/api', (req, res) => {
+  res.send('Hello from the backend!');
+});
+
+// Route pour servir les fichiers frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend'));
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
 /*
 const url = 'mongodb+srv://mathisfriess:L4HEfJzdFX7tcgKI@dragonshop.9wodojn.mongodb.net/?retryWrites=true&w=majority&appName=DragonShop';
@@ -947,9 +966,6 @@ async function udpateDb(table, filter, filterValue, field, fieldValue) {
   });
 }
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
 // Connecte-toi à MongoDB
 /*
 async function connectToMongo() {
