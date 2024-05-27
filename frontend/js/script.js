@@ -4,9 +4,9 @@
 
 // Définition de socket qui permet a tout le monde de communiquer avec le websocket 
 var socket;
-// const backendURL = 'http://digidooglechat.cluster-ig3.igpolytech.fr';
+const backendURL = 'http://digidooglechat.cluster-ig3.igpolytech.fr';
 // const backendURL = 'http://localhost:5000';
-const backendURL = process.env.backendURL;
+// const backendURL = process.env.backendURL;
 
 
 // --------------------------------- STRUCTURES --------------------------------
