@@ -370,7 +370,7 @@ async function loginSubmit() {
     body:JSON.stringify(loginData) // Corps de la requête, converti en JSON
   };
     
-  fetch('http://localhost:5000/login', requestOptions)
+  fetch(backendURL+'/login', requestOptions)
       .then(response => {
         // Gestion des erreurs
 
@@ -498,7 +498,7 @@ headers: {
 body: JSON.stringify(user) // Corps de la requête, converti en JSON
 };
 
-fetch('http://localhost:5000/signup', requestOptions)
+fetch(backendURL+'/signup', requestOptions)
   .then(response => {
     if(response.status == 400) {
       document.getElementById("resText").style.color = "red";
@@ -547,7 +547,7 @@ function addNotification(target, sender, content) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/notification/add';
+const url = backendURL+'/notification/add';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -591,7 +591,7 @@ async function loadNotifications() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/notification/get';
+const url = backendURL+'/notification/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -637,7 +637,7 @@ async function deleteNotification(id) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/notification/delete';
+const url = backendURL+'/notification/delete';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -763,7 +763,7 @@ async function friendsButton() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend/get';
+const url = backendURL+'/friend/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -950,7 +950,7 @@ function deleteFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend/delete';
+const url = backendURL+'/friend/delete';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1001,7 +1001,7 @@ function requestsButton() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend-request/get';
+const url = backendURL+'/friend-request/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1165,7 +1165,7 @@ async function acceptFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend-request/accept';
+const url = backendURL+'/friend-request/accept';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1206,7 +1206,7 @@ function denyFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend-request/deny';
+const url = backendURL+'/friend-request/deny';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1397,7 +1397,7 @@ async function loadMessages(selfMail, otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/conversation/get';
+const url = backendURL+'/conversation/get';
 
 console.log("tentative nouvelle conversation");
 // Effectuer la requête POST avec l'API Fetch
@@ -1451,7 +1451,7 @@ async function newChat(selfMail, otherMail) {
   };
   
   // URL de l'endpoint de l'API
-  const url = 'http://localhost:5000/conversation/new';
+  const url = backendURL+'/conversation/new';
   
   console.log("tentative nouvelle conversation");
   // Effectuer la requête POST avec l'API Fetch
@@ -1589,7 +1589,7 @@ async function sendMessage(selfMail, otherMail) {
     };
     
     // URL de l'endpoint de l'API
-    const url = 'http://localhost:5000/conversation/new-message';
+    const url = backendURL+'/conversation/new-message';
     
     // Effectuer la requête POST avec l'API Fetch
     fetch(url, requestOptions)
@@ -1668,7 +1668,7 @@ async function displayUser() {
   };
   
   // URL de l'endpoint de l'API
-  const url = 'http://localhost:5000/friend/get-status';
+  const url = backendURL+'/friend/get-status';
   
   // Effectuer la requête POST avec l'API Fetch
   fetch(url, requestOptions)
@@ -1791,7 +1791,7 @@ async function askFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:5000/friend-request/add';
+const url = backendURL+'/friend-request/add';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
