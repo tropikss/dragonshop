@@ -1,4 +1,6 @@
-{
+{"scripts": {
+  "start": "npx http-server . -p 4200 -P \"http://localhost:4200?\""
+},
   "dependencies": {
     "cookie-parser": "^1.4.6",
     "docker": "^0.2.14",
