@@ -1,25 +1,166 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
+  <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scroller horizontalement</title>
 
-    <title>Home</title>
+	<link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
 
-    <script src="js/script.js"></script>
-    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.min.css">
-    <style>
-        html, body, pre, code, kbd, samp {
-            font-family: "Press Start 2P";
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
+	<script src="./js/script.js"></script>
 </head>
+
 <body onload="index(); connectToWebsocket();">
-    <div id="notification-container"></div>
+
+	<style>		
+	#expandable-square {
+		width: 75px;
+		height: 75px;
+		background-color: whitesmoke;
+		position: fixed;
+		top: 10px;
+		right: 10px;
+		transition: all 0.3s ease;
+		cursor: pointer;
+		z-index: 1000; /* S'assure que l'élément reste au-dessus des autres éléments */
+	}
+
+	#expandable-square.expanded {
+		width: 400px;
+		height: 550px;
+	}
+
+	#notification-list {
+		display: none;
+	}
+
+	#expandable-square.expanded {
+		display: block;
+		background-color: whitesmoke;
+		width: 400px;
+		height: 550px;
+	}
+
+		html, body, pre, code, kbd, samp {
+        font-family: "Press Start 2P";
+    }
+
+	body {
+		background-image: url('./images/windows-resize.gif');
+		background-repeat: no-repeat; /* Optionnel : pour éviter que l'image ne se répète */
+		background-size: 100vw 100vh; /* Étend l'image pour couvrir 100% de la largeur et de la hauteur */
+		image-rendering: pixelated;
+	}
+
+	.nes-container.with-title > .title {
+		background-color: rgba(245, 245, 245, 0);
+	}
+
+	.container {
+		height: 100vh;
+		width: 100vw;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	#title {
+		filter: brightness(1.05) contrast(1) drop-shadow(-2px -2px 0px rgb(255, 255, 255, 0)) drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.9)) drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.7)) drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.5)) drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.3));
+		margin:50px;
+		font-size: 450%;
+	}
+	#logButton {
+		margin:10px;
+		display: flex;
+		flex-direction: row;
+		gap:10px;
+		transform:scale(1.5);
+		filter: brightness(1.05) contrast(1) drop-shadow(-2px -2px 0px rgb(255, 255, 255, 0)) drop-shadow(3px 3px 0px rgba(121, 121, 121, 1));
+
+	}
+	.animated-text {
+            display: inline-block;
+        }
+
+	.animated-text span {
+		display: inline-block;
+		animation: jump 3s ease-in-out infinite;
+		animation-delay: calc(var(--char-index) * 0.2s);
+	}
+
+	@keyframes jump {
+		0%, 100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+	#notification-list {
+		display: flex;
+		flex-direction: column;
+		max-height: 525px;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+	</style>
+
+<div class="container">
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			const square = document.getElementById('expandable-square');
+			const content = document.getElementById("notification-list");
+			var opened = false;
+
+			square.addEventListener('click', () => {
+				square.classList.toggle('expanded');
+				if(opened) {
+					document.getElementById("notification-list").innerHTML = "";
+					opened = false;
+				} else {
+					loadNotifications();
+					opened = true;
+				}
+			});
+
+			content.addEventListener('click', (event) => {
+				event.stopPropagation(); // Empêche la propagation de l'événement de clic à l'élément parent
+			});
+
+            const textElement = document.getElementById('title');
+            const text = textElement.textContent;
+            textElement.innerHTML = '';
+			var i = 0;
+
+            text.split('').forEach((char, index) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.style.setProperty('--char-index', index);
+				if(i < 4 || i > 9) {
+					span.style.color = "rgba(41, 145, 45, 1)";
+				} else {
+					span.style.color = "rgba(218, 218, 218, 1)";
+				}
+				i++;
+                textElement.appendChild(span);
+            });
+        });
+	</script>
+
+	<div id="notification-container"></div>
+	<div id="title" class="animated-text">DigiDoogleChat</div>
     <div id="userInfo"></div>
     <nav>
         <div id="logButton"></div>
-    </nav>
+    </nav>	
+</div>	
+
+<div id="expandable-square" class="nes-container is-rounded">
+	<div id="notification-list"></div>
+</div>
+
 </body>
 </html>

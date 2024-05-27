@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon compte</title>
     <script src="js/script.js"></script>
-    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.min.css">
+    <link rel="stylesheet" href="./node_modules/nes.css/css/nes.css">
     <style>
         html, body, pre, code, kbd, samp {
             font-family: "Press Start 2P";
+        }
+        body {
+		background-image: url('./images/windows-resize.gif');
+		background-repeat: no-repeat; /* Optionnel : pour éviter que l'image ne se répète */
+		background-size: 100vw 100vh; /* Étend l'image pour couvrir 100% de la largeur et de la hauteur */
+		image-rendering: pixelated;
+	    }
+        #userInfo {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>

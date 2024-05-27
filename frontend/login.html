@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +14,19 @@
 </head>
 <body>
     <style>
+        body {
+		background-image: url('./images/windows-resize.gif');
+		background-repeat: no-repeat; /* Optionnel : pour éviter que l'image ne se répète */
+		background-size: 100vw 100vh; /* Étend l'image pour couvrir 100% de la largeur et de la hauteur */
+		image-rendering: pixelated;
+	}
+
+    .nes-container.with-title > .title {
+		background-color: rgb(245, 245, 245);
+	}
         /* modifie la largeur du container de connexion */
         .center-container {
+            background-color: rgba(245, 245, 245, 0.534);
             width: 50%; 
             margin: 0 auto;
             position: absolute;

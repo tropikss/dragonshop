@@ -48,32 +48,39 @@ async function index() {
 
     if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
-      
-      // Bouton deconnexion
-      var button = document.createElement("button");
-      button.setAttribute("onclick", "logout()");
-      button.textContent = "Déconnexion";
+
+      // Messagerie
+      button = document.createElement("button");
+      button.className = "nes-btn is-warning";
+      button.setAttribute("onclick", "window.location.href='chat.html'");
+      button.textContent = "Messagerie";
       document.getElementById("logButton").appendChild(button);
 
       // Bouton mon compte
       button = document.createElement("button");
+      button.className = "nes-btn is-primary";
       button.setAttribute("onclick", "window.location.href='account.html'");
       button.textContent = "Mon compte";
       document.getElementById("logButton").appendChild(button);
 
-      // Messagerie
-      button = document.createElement("button");
-      button.setAttribute("onclick", "window.location.href='chat.html'");
-      button.textContent = "Messagerie";
+      // Bouton deconnexion
+      var button = document.createElement("button");
+      button.className = "nes-btn is-error";
+      button.setAttribute("onclick", "logout()");
+      button.textContent = "Déconnexion";
       document.getElementById("logButton").appendChild(button);
       
       // Page admin
       if(res.role =="admin") {
         const button = document.createElement("button");
+        button.className = "nes-btn";
         button.setAttribute("onclick", "window.location.href='admin.html'");
         button.textContent = "Page admin";
         document.getElementById("logButton").appendChild(button);
       }
+    } else {
+      document.cookie = "userId" + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      index();
     }
   } else {
     console.log('Le cookie userId n\'est pas présent.');
@@ -82,12 +89,14 @@ async function index() {
     const loginButton = document.createElement("button");
     loginButton.setAttribute("onclick", "window.location.href='login.html'");
     loginButton.textContent = "Connexion";
+    loginButton.className = "nes-btn is-success";
     document.getElementById("logButton").appendChild(loginButton); 
 
     // Inscription
     const signupButton = document.createElement("button");
     signupButton.setAttribute("onclick", "window.location.href='signup.html'");
     signupButton.textContent = "Inscription";
+    signupButton.className = "nes-btn is-warning";
     document.getElementById("logButton").appendChild(signupButton);
   }
 }
@@ -283,26 +292,43 @@ async function account() {
       res = (await res.json())[0];
       console.log(res);
 
-      const resText = document.createElement("strong");
-      resText.textContent = "Vos informations : ";
+      const informationDiv = document.createElement("div");
+      informationDiv.setAttribute("class","nes-container is-rounded");
+      informationDiv.style.width = "50%";
+      informationDiv.style.backgroundColor = "whitesmoke";
+      informationDiv.style.left = "25%";
+      informationDiv.style.top = "25%";
+      informationDiv.style.transform = "scale(1.25)";
 
-      const resName = document.createElement("div");
-      resName.textContent = "Prenom : "+res.name;
+        const resText = document.createElement("div");
+        resText.style.left = "40px";
+        resText.className = "nes-text";
+        resText.style.fontSize = "150%";
+        resText.style.color = "whitesmoke";
+        resText.style.filter = "drop-shadow(2px 0px 0px rgba(0,0,0, 1)) drop-shadow(-2px 0px 0px rgba(0,0,0, 1)) drop-shadow(0px 2px 0px rgba(0,0,0, 1)) drop-shadow(0px -2px 0px rgba(0,0,0, 1))";
+        resText.textContent = "Compte ";
 
-      const resLastname = document.createElement("div");
-      resLastname.textContent = "Nom : "+res.lastname;
+        const resName = document.createElement("div");
+        resName.className = "nes-text";
+        resName.textContent = "Prenom : "+res.name;
 
-      const resMail = document.createElement("div");
-      resMail.textContent = "Mail : "+res.mail;
+        const resLastname = document.createElement("div");
+        resLastname.textContent = "Nom : "+res.lastname;
 
-      const avatar = document.createElement("i");
-      avatar.setAttribute("class","nes-"+res.avatar);
+        const resMail = document.createElement("div");
+        resMail.textContent = "Mail : "+res.mail;
 
-      document.getElementById("userInfo").appendChild(resText);
-      document.getElementById("userInfo").appendChild(resName);
-      document.getElementById("userInfo").appendChild(resLastname);
-      document.getElementById("userInfo").appendChild(resMail);
-      document.getElementById("userInfo").appendChild(avatar);
+        const avatar = document.createElement("i");
+        avatar.setAttribute("class","nes-"+res.avatar);
+        avatar.style.left = "40%";
+
+      informationDiv.appendChild(resText);
+      informationDiv.appendChild(resName);
+      informationDiv.appendChild(resLastname);
+      informationDiv.appendChild(resMail);
+      informationDiv.appendChild(avatar);
+
+      document.getElementById("userInfo").appendChild(informationDiv);
 
     } else {
       const text = document.createElement("strong");
@@ -498,6 +524,178 @@ fetch('http://localhost:3000/signup', requestOptions)
   .catch(error => {
       console.error('There has been a problem with your fetch operation:', error);
   });
+}
+
+function addNotification(target, sender, content) {
+  const userId = getCookie("userId");
+
+  const postData = {
+    "target":target,
+    "sender":sender,
+    "content":content,
+    "userId":userId
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/notification/add';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      console.log("Ajout notification réussie");
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
+}
+
+async function loadNotifications() {
+  console.log("Load notification");
+  document.getElementById("notification-list").innerHTML = "";
+
+  const userId = await getCookie("userId");
+
+  const postData = {
+    "userId":userId
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/notification/get';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Récuperation liste notifications réussie");
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      data.forEach(element => {
+        displayNotification(element);
+      });
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
+}
+
+async function deleteNotification(id) {
+  console.log(id);
+  const userId = await getCookie("userId");
+
+  const postData = {
+    "userId":userId,
+    "id":id
+  }
+
+  // Options de la requête
+  const requestOptions = {
+    method: 'POST', // Méthode HTTP POST
+    headers: {
+        'Content-Type': 'application/json' // Indique que le corps de la requête est au format JSON
+    },
+    body: JSON.stringify(postData) // Convertit les données JSON en une chaîne JSON
+};
+
+// URL de l'endpoint de l'API
+const url = 'http://localhost:3000/notification/delete';
+
+// Effectuer la requête POST avec l'API Fetch
+fetch(url, requestOptions)
+    .then(async response => {
+        // Vérifiez si la réponse est OK (status 200)
+        if (response.ok) {
+            console.log("Récuperation liste notifications réussie");
+            return response.json();
+        } else {
+          const text = await response.text();
+          throw new Error(text);
+        }
+      })
+    .then(async data => {
+      console.log("Notification supprimée");
+      return;
+    })
+    .catch(error => {
+        // Gérez les erreurs d'envoi de la requête ou de traitement de la réponse
+        console.error('Erreur : ', error);
+    });
+
+}
+
+async function displayNotification(el) {
+  const container = document.getElementById("notification-list");
+
+    const box = document.createElement("div");
+    box.className = "nes-container is-rounded"; 
+    box.style.display = "flex";
+    box.style.flexDirection = "row";
+
+      const content = document.createElement("span");
+      content.className = "nes-text";
+      content.textContent = el.content;
+      content.style.display = "flex";
+      content.style.width = "300px";
+      content.style.maxWidth = "85%";
+      content.style.height = "auto";
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "nes-btn is-success";
+      deleteButton.textContent = "Ok";
+      deleteButton.style.width = "15%";
+      deleteButton.style.height = "40px";
+      deleteButton.style.transform = "scale(0.75)";
+      deleteButton.setAttribute("data-id", el._id);
+
+      deleteButton.addEventListener('click', async function(event) {
+        var id = this.dataset.id;
+        
+        await deleteNotification(id);
+        setTimeout(loadNotifications, 200);
+      });
+
+    box.appendChild(content);
+    box.appendChild(deleteButton);
+
+  container.appendChild(box);
 }
 
 function showNotification(message) {
@@ -947,8 +1145,9 @@ async function displayFriendRequest(selfMail, friendRequestTab) {
   });
 }
 
-function acceptFriend(otherMail) {
+async function acceptFriend(otherMail) {
   const userId = getCookie("userId");
+  const selfMail = await getCurrentMail();
 
   const postData = {
     "userId":userId,
@@ -974,6 +1173,8 @@ fetch(url, requestOptions)
         if (response.ok) {
             console.log("Acceptation ami réussie");
             requestsButton();
+            addNotification(selfMail, selfMail, otherMail+" est maintenant votre ami");
+            addNotification(otherMail, selfMail, selfMail+" est maintenant votre ami");
             return;
         } else {
           return response.text().then(text => { throw new Error(text) });

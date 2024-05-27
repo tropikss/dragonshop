@@ -16,6 +16,7 @@
     <style>
         /* modifie la largeur du container de connexion */
         .center-container {
+            background-color: rgba(245, 245, 245, 0.655);
             width: 66%; 
             margin: 10px auto;
             position: relative;
@@ -23,6 +24,15 @@
             left: 50%; */
             /* transform: translate(-50%, -50%); */
         }
+        body {
+            background-image: url('./images/windows-resize.gif');
+            background-repeat: no-repeat; /* Optionnel : pour éviter que l'image ne se répète */
+            background-size: 100vw 100%; /* Étend l'image pour couvrir 100% de la largeur et de la hauteur */
+            image-rendering: pixelated;
+	    }
+        .nes-container.with-title > .title {
+		background-color: rgba(245, 245, 245, 1);
+	}
 
         .selectable {
             cursor: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAzElEQVRYR+2X0Q6AIAhF5f8/2jYXZkwEjNSVvVUjDpcrGgT7FUkI2D9xRfQETwNIiWO85wfINfQUEyxBG2ArsLwC0jioGt5zFcwF4OYDPi/mBYKm4t0U8ATgRm3ThFoAqkhNgWkA0jJLvaOVSs7j3qMnSgXWBMiWPXe94QqMBMBc1VZIvaTu5u5pQewq0EqNZvIEMCmxAawK0DNkay9QmfFNAJUXfgGgUkLaE7j/h8fnASkxHTz0DGIBMCnBeeM7AArpUd3mz2x3C7wADglA8BcWMZhZAAAAAElFTkSuQmCC) 14 0, pointer;
@@ -34,12 +44,18 @@
 
         /* Modifie la largeur du container des avatars pour tous les afficher */
         .avatar-container {
+            background-color: rgba(245, 245, 245, 0.655);
             width: 66%; 
             margin: 10px auto;
             position: relative;
             /* top: 50%;    
             left: 50%; */
             /* transform: translate(-50%, -50%); */
+        }
+
+        .nes-input {
+            height: 80%;
+            background-color: rgba(245, 245, 245, 0);
         }
     </style>
 

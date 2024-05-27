@@ -20,6 +20,7 @@ app.use(cookieParser('maThIs273'));
 
 const nodemailer = require('nodemailer');
 const { send } = require('process');
+const { ObjectId } = require('mongodb');
 
 const port = 3000;
 
@@ -57,6 +58,7 @@ const usersCollection = db.collection('users');
 const conversationsCollection = db.collection('conversations');
 const friendrequestCollection = db.collection("friend-request");
 const friendCollection = db.collection("friend");
+const notificationsCollection = db.collection('notifications');
 
 app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
 app.use(bodyparser.json());
@@ -549,27 +551,132 @@ app.post('/conversation/get', async(req, res) => {
   }
 });
 
+// --------------------------------- NOTIFICATION ---------------------------------------
+
+app.post('/notification/add', async(req, res) => {
+  const data = req.body;
+
+  const sender = data.sender;
+  const target = data.target;
+  const content = data.content;
+  const userId = data.userId;
+
+  const query = {"userId": userId};
+
+  const projection = {
+    mail: 1
+  };
+
+  var request = await usersCollection.find(query).project(projection).toArray();
+
+  if(request && request.length == 1) {
+    request = request[0];
+
+    if(request.mail == sender) {
+      notificationsCollection.insertOne({"target":target, "sender":sender, "content":content});
+      res.status(200).send("Notification crée");
+    } else {
+      res.status(400).send("L'userId et le mail du sender ne correspondent pas");
+    }
+
+  } else {
+    res.status(400).send("UserId incorrect");
+  }
+
+});
+
+app.post('/notification/get', async(req, res) => {
+  const data = req.body;
+
+  const userId = data.userId;
+
+  const query = {"userId": userId};
+
+  var projection = {
+    mail: 1
+  };
+
+  var request = await usersCollection.find(query).project(projection).toArray();
+
+  if(request && request.length == 1) {
+    request = request[0];
+    const target = request.mail;
+    console.log(target);
+
+    projection = {
+      target: 1,
+      sender: 1,
+      content: 1,
+    };
+
+    var request = await notificationsCollection.find({"target":target}).project(projection).toArray();
+    res.status(200).json(request);
+
+  } else {
+    res.status(400).send("L'userId ne correspond pas");
+  }
+});
+
+app.post('/notification/delete', async(req, res) => {
+  const data = req.body;
+
+  const userId = data.userId;
+  const id = new ObjectId(data.id);
+
+  const query = {"userId": userId};
+
+  var projection = {
+    mail: 1
+  };
+
+  var request = await usersCollection.find(query).project(projection).toArray();
+
+  if(request && request.length == 1) {
+    request = request[0];
+    const mail = request.mail;
+
+    request = await notificationsCollection.find({"_id":id}).toArray();
+
+    if(request && request.length == 1) {
+      if(request[0].target == mail) {
+        notificationsCollection.deleteOne({"_id":id});
+        res.status(200).send("Notification supprimée");
+      } else {
+        res.status(400).send("UserId et mail target ne correspondent pas");
+      }
+    } else {
+      res.status(400).send("Notification introuvable");
+    }
+  } else {
+    res.status(400).send("UserId incorrect");
+  }
+});
+
 // --------------------------------------------------------------------------------------
 
 app.get("/users/search/:filter/:field", async (req, res) => {
   const filter = req.params.filter;
+
+  if(filter != "userId" && filter != "mail" && filter != "name" && filter != "lastname") {
+    return;
+  }
+
   const field = req.params.field;
 
-  const request = {
-    find:"users",
-    filter:{[filter]:field}
+  const query = { [filter]: field };
+
+  const projection = {
+    name: 1,
+    lastname: 1,
+    mail: 1,
+    avatar: 1,
+    role: 1
   };
-  const rep = await asyncSearch(request);
 
-  const documents = rep.cursor.firstBatch;
-  const resTab = [];
+  const rep = await usersCollection.find(query).project(projection).toArray();
 
-  documents.forEach((doc, index) => {
-    resTab.push(doc);
-  });
-
-  if(resTab[0] != undefined) {
-    res.send(resTab);
+  if(rep[0] != undefined) {
+    res.send(rep);
   } else {
     res.status(204).end();
   }
