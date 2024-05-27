@@ -22,8 +22,6 @@ const nodemailer = require('nodemailer');
 const { send } = require('process');
 const { ObjectId } = require('mongodb');
 
-const websocket = require('./websocket'); // Importez votre fichier websocket.js
-
 const port = 5000;
 
 // Middleware pour servir les fichiers statiques du frontend
@@ -59,6 +57,7 @@ const MongoClient = require('mongodb').MongoClient;
 const uri = 'mongodb://localhost:27017';
 
 const client = new MongoClient(uri);
+const websocket = require('./websocket');
 
 mongo();
 
@@ -79,7 +78,7 @@ const friendrequestCollection = db.collection("friend-request");
 const friendCollection = db.collection("friend");
 const notificationsCollection = db.collection('notifications');
 
-app.use(cors( { origin: `http://localhost:4200`, credentials: true } ));
+app.use(cors( { origin: [`http://localhost:5000`, `http://digidooglechat.cluster-ig3.igpolytech.fr/index.html`], credentials: true } ));
 app.use(bodyparser.json());
 
 async function newUserId() {
