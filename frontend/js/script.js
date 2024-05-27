@@ -350,8 +350,8 @@ async function account() {
 async function loginSubmit() {
 
   // Récupération des données
-  const mail = document.getElementById("mailField").value.toLowerCase();
-  const password = document.getElementById("passwordField").value;
+  const mail = await document.getElementById("mailField").value.toLowerCase();
+  const password = await document.getElementById("passwordField").value;
 
   // Encryptage
   const hashedPassword = await hashPassword(password);
