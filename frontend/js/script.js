@@ -4,6 +4,7 @@
 
 // Définition de socket qui permet a tout le monde de communiquer avec le websocket 
 var socket;
+const backendURL = 'http://digidooglechat.cluster-ig3.igpolytech.fr';
 
 // --------------------------------- STRUCTURES --------------------------------
 
@@ -44,7 +45,7 @@ async function index() {
     console.log("userId : "+userId);
 
     // récupère les données de l'utilisateur en cours
-    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
+    var res = await getServer("backendURL/users/search/userId/"+userId);
 
     if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
@@ -124,7 +125,7 @@ async function admin() {
   // Verification si l'utilisateur est bien admin
   // /admin/userId permet de vérifier que l'userId indiqué est bien admin
   //    - 200 pour oui
-  var res = await getServer("http://localhost:5000/admin/"+userId);
+  var res = await getServer("backendURL/admin/"+userId);
   console.log(await res);
   res = await res.json();
   console.log(res);
@@ -180,7 +181,7 @@ async function userInfoChange(i) {
     /changeUserInfo/userId/name/lastname/mail
     Permet de changer le nom prénom de l'utilisateur correspondant au mail, vérification avec l'userId des autorisations
   */
-  const res = await getServer("http://localhost:5000/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
+  const res = await getServer(backendURL+"/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
   if(await res.status == 200) {
     console.log("modification effectué avec succès");
     alert("Modification réussie");
@@ -201,8 +202,8 @@ async function searchUserAdmin() {
   console.log(field);
   console.log(filter);
 
-  console.log("http://localhost:5000/users/"+filter+"/"+field);
-  var res = await getServer("http://localhost:5000/users/search/"+filter+"/"+field);
+  console.log(backendURL+"/users/"+filter+"/"+field);
+  var res = await getServer(backendURL+"/users/search/"+filter+"/"+field);
 
   if(res != undefined) {
     res = await res.json();
@@ -285,7 +286,7 @@ async function account() {
     const userId = getCookie("userId");
     console.log(userId);
 
-    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
+    var res = await getServer(backendURL+"/users/search/userId/"+userId);
     console.log(res);
 
     if(res != undefined) {
@@ -814,7 +815,7 @@ async function displayFriend(selfMail, friendTab) {
     }
     console.log(otherMail);
 
-    var request = await getServer("http://localhost:5000/users/search/mail/"+otherMail);
+    var request = await getServer(backendURL+"/users/search/mail/"+otherMail);
     request = (await(request).json());
     var avatarName;
     if(request != undefined && request.length == 1) {
@@ -1046,7 +1047,7 @@ async function displayFriendRequest(selfMail, friendRequestTab) {
 
     console.log(otherMail);
 
-    var request = await getServer("http://localhost:5000/users/search/mail/"+otherMail);
+    var request = await getServer(backendURL+"/users/search/mail/"+otherMail);
     request = (await(request).json());
     var avatarName;
     if(request != undefined && request.length == 1) {
@@ -1307,9 +1308,9 @@ async function addMessage(mail, message, self) {
 
   if(self) {
     const selfMail = await getCurrentMail();
-    res = await getServer("http://localhost:5000/users/search/mail/"+selfMail);
+    res = await getServer(backendURL+"/users/search/mail/"+selfMail);
   } else {
-    res = await getServer("http://localhost:5000/users/search/mail/"+mail);
+    res = await getServer(backendURL+"/users/search/mail/"+mail);
   }
 
   if(res != undefined) {
@@ -1637,7 +1638,7 @@ async function displayUser() {
   console.log("current mail : "+mail1);
   const mail2 = document.getElementById("searchText").value.toLowerCase()+"@etu.umontpellier.fr";
 
-  res = await getServer("http://localhost:5000/users/search/mail/"+mail2);
+  res = await getServer(backendURL+"/users/search/mail/"+mail2);
 
   if(res != undefined) {
     res = await res.json();
@@ -1892,7 +1893,7 @@ async function getCurrentMail() {
   const userId = await getCookie("userId");
 
   if(await userId != undefined) {
-    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
+    var res = await getServer(backendURL+"/users/search/userId/"+userId);
     if(await res != undefined) {
       res = await res.json();
       res = res[0];
@@ -1931,7 +1932,7 @@ async function connectToWebsocket() {
         case "message":
           console.log(data.content);
           addMessage(data.mail, data.message, false);
-          var userData = await getServer("http://localhost:5000/users/search/mail/"+data.mail);
+          var userData = await getServer(backendURL+"/users/search/mail/"+data.mail);
           userData = await userData.json();
           userData = await userData[0];
           console.log(userData);
