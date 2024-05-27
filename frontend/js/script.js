@@ -44,7 +44,7 @@ async function index() {
     console.log("userId : "+userId);
 
     // récupère les données de l'utilisateur en cours
-    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
 
     if(res != undefined) { // si un utilisateur existe bien
       res = (await res.json())[0];
@@ -124,7 +124,7 @@ async function admin() {
   // Verification si l'utilisateur est bien admin
   // /admin/userId permet de vérifier que l'userId indiqué est bien admin
   //    - 200 pour oui
-  var res = await getServer("http://localhost:3000/admin/"+userId);
+  var res = await getServer("http://localhost:5000/admin/"+userId);
   console.log(await res);
   res = await res.json();
   console.log(res);
@@ -180,7 +180,7 @@ async function userInfoChange(i) {
     /changeUserInfo/userId/name/lastname/mail
     Permet de changer le nom prénom de l'utilisateur correspondant au mail, vérification avec l'userId des autorisations
   */
-  const res = await getServer("http://localhost:3000/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
+  const res = await getServer("http://localhost:5000/changeUserInfo/"+userId+"/"+name+"/"+lastname+"/"+mail);
   if(await res.status == 200) {
     console.log("modification effectué avec succès");
     alert("Modification réussie");
@@ -201,8 +201,8 @@ async function searchUserAdmin() {
   console.log(field);
   console.log(filter);
 
-  console.log("http://localhost:3000/users/"+filter+"/"+field);
-  var res = await getServer("http://localhost:3000/users/search/"+filter+"/"+field);
+  console.log("http://localhost:5000/users/"+filter+"/"+field);
+  var res = await getServer("http://localhost:5000/users/search/"+filter+"/"+field);
 
   if(res != undefined) {
     res = await res.json();
@@ -285,7 +285,7 @@ async function account() {
     const userId = getCookie("userId");
     console.log(userId);
 
-    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
     console.log(res);
 
     if(res != undefined) {
@@ -369,7 +369,7 @@ async function loginSubmit() {
     body:JSON.stringify(loginData) // Corps de la requête, converti en JSON
   };
     
-  fetch('http://localhost:3000/login', requestOptions)
+  fetch('http://localhost:5000/login', requestOptions)
       .then(response => {
         // Gestion des erreurs
 
@@ -497,7 +497,7 @@ headers: {
 body: JSON.stringify(user) // Corps de la requête, converti en JSON
 };
 
-fetch('http://localhost:3000/signup', requestOptions)
+fetch('http://localhost:5000/signup', requestOptions)
   .then(response => {
     if(response.status == 400) {
       document.getElementById("resText").style.color = "red";
@@ -546,7 +546,7 @@ function addNotification(target, sender, content) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/notification/add';
+const url = 'http://localhost:5000/notification/add';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -590,7 +590,7 @@ async function loadNotifications() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/notification/get';
+const url = 'http://localhost:5000/notification/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -636,7 +636,7 @@ async function deleteNotification(id) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/notification/delete';
+const url = 'http://localhost:5000/notification/delete';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -724,7 +724,7 @@ function showNotification(message) {
       setTimeout(() => {
       notification.remove();
       }, 500); // Correspond à la durée de l'animation de disparition
-  }, 3000); // La notification disparaît après 3 secondes
+  }, 5000); // La notification disparaît après 3 secondes
 }
 
 // ------------------------- chat -----------------------------
@@ -762,7 +762,7 @@ async function friendsButton() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend/get';
+const url = 'http://localhost:5000/friend/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -814,7 +814,7 @@ async function displayFriend(selfMail, friendTab) {
     }
     console.log(otherMail);
 
-    var request = await getServer("http://localhost:3000/users/search/mail/"+otherMail);
+    var request = await getServer("http://localhost:5000/users/search/mail/"+otherMail);
     request = (await(request).json());
     var avatarName;
     if(request != undefined && request.length == 1) {
@@ -949,7 +949,7 @@ function deleteFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend/delete';
+const url = 'http://localhost:5000/friend/delete';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1000,7 +1000,7 @@ function requestsButton() {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend-request/get';
+const url = 'http://localhost:5000/friend-request/get';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1046,7 +1046,7 @@ async function displayFriendRequest(selfMail, friendRequestTab) {
 
     console.log(otherMail);
 
-    var request = await getServer("http://localhost:3000/users/search/mail/"+otherMail);
+    var request = await getServer("http://localhost:5000/users/search/mail/"+otherMail);
     request = (await(request).json());
     var avatarName;
     if(request != undefined && request.length == 1) {
@@ -1164,7 +1164,7 @@ async function acceptFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend-request/accept';
+const url = 'http://localhost:5000/friend-request/accept';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1205,7 +1205,7 @@ function denyFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend-request/deny';
+const url = 'http://localhost:5000/friend-request/deny';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1307,9 +1307,9 @@ async function addMessage(mail, message, self) {
 
   if(self) {
     const selfMail = await getCurrentMail();
-    res = await getServer("http://localhost:3000/users/search/mail/"+selfMail);
+    res = await getServer("http://localhost:5000/users/search/mail/"+selfMail);
   } else {
-    res = await getServer("http://localhost:3000/users/search/mail/"+mail);
+    res = await getServer("http://localhost:5000/users/search/mail/"+mail);
   }
 
   if(res != undefined) {
@@ -1396,7 +1396,7 @@ async function loadMessages(selfMail, otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/conversation/get';
+const url = 'http://localhost:5000/conversation/get';
 
 console.log("tentative nouvelle conversation");
 // Effectuer la requête POST avec l'API Fetch
@@ -1450,7 +1450,7 @@ async function newChat(selfMail, otherMail) {
   };
   
   // URL de l'endpoint de l'API
-  const url = 'http://localhost:3000/conversation/new';
+  const url = 'http://localhost:5000/conversation/new';
   
   console.log("tentative nouvelle conversation");
   // Effectuer la requête POST avec l'API Fetch
@@ -1588,7 +1588,7 @@ async function sendMessage(selfMail, otherMail) {
     };
     
     // URL de l'endpoint de l'API
-    const url = 'http://localhost:3000/conversation/new-message';
+    const url = 'http://localhost:5000/conversation/new-message';
     
     // Effectuer la requête POST avec l'API Fetch
     fetch(url, requestOptions)
@@ -1637,7 +1637,7 @@ async function displayUser() {
   console.log("current mail : "+mail1);
   const mail2 = document.getElementById("searchText").value.toLowerCase()+"@etu.umontpellier.fr";
 
-  res = await getServer("http://localhost:3000/users/search/mail/"+mail2);
+  res = await getServer("http://localhost:5000/users/search/mail/"+mail2);
 
   if(res != undefined) {
     res = await res.json();
@@ -1667,7 +1667,7 @@ async function displayUser() {
   };
   
   // URL de l'endpoint de l'API
-  const url = 'http://localhost:3000/friend/get-status';
+  const url = 'http://localhost:5000/friend/get-status';
   
   // Effectuer la requête POST avec l'API Fetch
   fetch(url, requestOptions)
@@ -1790,7 +1790,7 @@ async function askFriend(otherMail) {
 };
 
 // URL de l'endpoint de l'API
-const url = 'http://localhost:3000/friend-request/add';
+const url = 'http://localhost:5000/friend-request/add';
 
 // Effectuer la requête POST avec l'API Fetch
 fetch(url, requestOptions)
@@ -1892,7 +1892,7 @@ async function getCurrentMail() {
   const userId = await getCookie("userId");
 
   if(await userId != undefined) {
-    var res = await getServer("http://localhost:3000/users/search/userId/"+userId);
+    var res = await getServer("http://localhost:5000/users/search/userId/"+userId);
     if(await res != undefined) {
       res = await res.json();
       res = res[0];
@@ -1931,7 +1931,7 @@ async function connectToWebsocket() {
         case "message":
           console.log(data.content);
           addMessage(data.mail, data.message, false);
-          var userData = await getServer("http://localhost:3000/users/search/mail/"+data.mail);
+          var userData = await getServer("http://localhost:5000/users/search/mail/"+data.mail);
           userData = await userData.json();
           userData = await userData[0];
           console.log(userData);
